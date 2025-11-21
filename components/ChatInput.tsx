@@ -1,0 +1,635 @@
+'use client';
+
+import { useState, useRef, KeyboardEvent, useEffect } from 'react';
+
+interface AttachedFile {
+  type: 'image' | 'document';
+  data: string; // base64 for images, extracted text for PDFs
+  name: string;
+  mimeType: string;
+  isConverted?: boolean; // true if PDF was converted to image
+  extractedText?: string; // extracted text from PDF
+}
+
+interface ChatInputProps {
+  onSend: (message: string, images?: string[]) => void;
+  disabled?: boolean;
+  supportsVision?: boolean;
+}
+
+export default function ChatInput({ onSend, disabled, supportsVision }: ChatInputProps) {
+  const [message, setMessage] = useState('');
+  const [files, setFiles] = useState<AttachedFile[]>([]);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [pdfjsLib, setPdfjsLib] = useState<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  const MAX_FILES = 10;
+
+  // Load PDF.js from CDN
+  useEffect(() => {
+    let mounted = true;
+
+    console.log('[PDF.js] Starting to load PDF.js from CDN...');
+
+    const loadPdfJsFromCDN = () => {
+      // Check if already loaded
+      if ((window as any).pdfjsLib) {
+        console.log('[PDF.js] Already loaded from previous session');
+        setPdfjsLib((window as any).pdfjsLib);
+        return;
+      }
+
+      // Create script element
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+      script.async = true;
+
+      script.onload = () => {
+        console.log('[PDF.js] Script loaded successfully');
+
+        const pdfjsLib = (window as any).pdfjsLib;
+        if (pdfjsLib) {
+          // Set worker
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+          if (mounted) {
+            setPdfjsLib(pdfjsLib);
+            console.log('[PDF.js] ✓ PDF.js loaded and ready!');
+          }
+        } else {
+          console.error('[PDF.js] Script loaded but pdfjsLib not found on window');
+        }
+      };
+
+      script.onerror = (error) => {
+        console.error('[PDF.js] ❌ Failed to load PDF.js script:', error);
+        setFileError('PDF processing library failed to load. Please check your internet connection.');
+      };
+
+      document.head.appendChild(script);
+    };
+
+    loadPdfJsFromCDN();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSend = () => {
+    if (message.trim() || files.length > 0) {
+      // Separate images and documents with text
+      const imageFiles = files.filter(f => f.type === 'image' && f.data);
+      const documentFiles = files.filter(f => f.extractedText);
+
+      // Combine user message with extracted document text
+      let fullMessage = message;
+
+      if (documentFiles.length > 0) {
+        const documentTexts = documentFiles.map(doc =>
+          `\n\n=== Document: ${doc.name} ===\n${doc.extractedText}`
+        ).join('\n');
+
+        fullMessage = `${message}\n\n${documentTexts}`;
+      }
+
+      // Extract base64 image data for sending
+      const imageData = imageFiles.length > 0 ? imageFiles.map(f => f.data) : undefined;
+
+      onSend(fullMessage, imageData);
+      setMessage('');
+      setFiles([]);
+      setFileError(null);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+    const uploadedFiles = e.target.files;
+    if (!uploadedFiles) return;
+
+    setFileError(null);
+    const filesToProcess = Array.from(uploadedFiles).slice(0, MAX_FILES - files.length);
+
+    // Validate file sizes
+    const oversizedFiles = filesToProcess.filter(f => f.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      setFileError(`Some files exceed 10MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const newFiles: AttachedFile[] = [];
+
+      for (const file of filesToProcess) {
+        if (files.length + newFiles.length >= MAX_FILES) break;
+
+        // Check if file is a PDF - smart processing
+        if (file.type === 'application/pdf') {
+          try {
+            // Check if PDF.js is loaded
+            if (!pdfjsLib) {
+              setFileError('PDF processing library is still loading. Please wait a moment and try again.');
+              continue;
+            }
+
+            // First, get page count to decide approach
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const pageCount = pdf.numPages;
+
+            console.log(`PDF detected: ${file.name} (${pageCount} pages)`);
+
+            // Smart decision: Images for visual analysis (≤30 pages), Text for long docs (>30 pages)
+            if (pageCount <= 30) {
+              // Convert to images for vision model analysis
+              console.log(`Converting PDF to images (${pageCount} pages)...`);
+              const images = await convertPdfToImages(file);
+              newFiles.push(...images);
+              console.log(`✓ PDF converted to ${images.length} images for vision analysis`);
+            } else {
+              // Extract text for long document analysis
+              console.log(`Extracting text from large PDF (${pageCount} pages)...`);
+              const extractedText = await extractPdfText(file);
+              newFiles.push({
+                type: 'document',
+                data: '',
+                name: file.name,
+                mimeType: file.type,
+                extractedText,
+              });
+              console.log(`✓ PDF text extracted: ${extractedText.length} characters`);
+            }
+          } catch (error) {
+            console.error('PDF processing error:', error);
+            setFileError(`Failed to process PDF: ${file.name}. ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else if (type === 'image') {
+          // Regular image processing with FileReader
+          const result = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+            reader.readAsDataURL(file);
+          });
+
+          newFiles.push({
+            type,
+            data: result,
+            name: file.name,
+            mimeType: file.type,
+          });
+        } else {
+          // Other document types - read as text
+          const result = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+            reader.readAsText(file);
+          });
+
+          newFiles.push({
+            type: 'document',
+            data: '',
+            name: file.name,
+            mimeType: file.type,
+            extractedText: result,
+          });
+        }
+      }
+
+      // Add all processed files at once
+      if (newFiles.length > 0) {
+        setFiles((prev) => [...prev, ...newFiles]);
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      setFileError(error instanceof Error ? error.message : 'Failed to process files');
+    }
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleInput = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+    }
+  };
+
+  // Convert PDF to images (for vision analysis)
+  const convertPdfToImages = async (file: File): Promise<AttachedFile[]> => {
+    if (!pdfjsLib) {
+      throw new Error('PDF.js library not loaded yet. Please try again in a moment.');
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const images: AttachedFile[] = [];
+
+      console.log(`Converting PDF to images: ${file.name} (${pdf.numPages} pages)`);
+
+      // Convert all pages (limit to 30 for vision processing)
+      const numPages = Math.min(pdf.numPages, 30);
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+        }).promise;
+
+        const imageData = canvas.toDataURL('image/jpeg', 0.85);
+
+        images.push({
+          type: 'image',
+          data: imageData,
+          name: `${file.name} (Page ${pageNum})`,
+          mimeType: 'image/jpeg',
+          isConverted: true,
+        });
+
+        if (pageNum % 5 === 0) {
+          console.log(`Converted ${pageNum}/${numPages} pages...`);
+        }
+      }
+
+      console.log(`PDF → Images complete: ${images.length} pages`);
+      return images;
+    } catch (error) {
+      console.error('Error converting PDF to images:', error);
+      throw new Error('Failed to convert PDF to images');
+    }
+  };
+
+  // Extract text from PDF (for long documents)
+  const extractPdfText = async (file: File): Promise<string> => {
+    if (!pdfjsLib) {
+      throw new Error('PDF.js library not loaded yet. Please try again in a moment.');
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      console.log(`Extracting text from PDF: ${file.name} (${pdf.numPages} pages)`);
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+
+        fullText += `\n\n--- Page ${pageNum} ---\n${pageText}`;
+
+        if (pageNum % 10 === 0) {
+          console.log(`Extracted ${pageNum}/${pdf.numPages} pages...`);
+        }
+      }
+
+      console.log(`PDF text extraction complete: ${fullText.length} characters`);
+      return fullText.trim();
+    } catch (error) {
+      console.error('Error extracting PDF text:', error);
+      throw new Error('Failed to extract text from PDF');
+    }
+  };
+
+  return (
+    <div className="input-area">
+      {/* File previews - shown above input */}
+      {files.length > 0 && (
+        <div style={{ marginBottom: '12px' }}>
+          {/* Info for converted PDFs (images) */}
+          {files.some(f => f.isConverted) && (
+            <div style={{
+              padding: '8px 12px',
+              marginBottom: '8px',
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: '6px',
+              color: '#3b82f6',
+              fontSize: '12px',
+            }}>
+              📄 PDF converted to images for vision analysis (≤30 pages)
+            </div>
+          )}
+
+          {/* Info for PDFs with extracted text */}
+          {files.some(f => f.extractedText && !f.isConverted) && (
+            <div style={{
+              padding: '8px 12px',
+              marginBottom: '8px',
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: '6px',
+              color: '#22c55e',
+              fontSize: '12px',
+            }}>
+              📝 Text extracted from large PDF ({'>'}30 pages) - will be included with your message
+            </div>
+          )}
+
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            padding: '12px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}>
+            {files.map((file, idx) => (
+              <div key={idx} style={{ position: 'relative' }}>
+                {file.type === 'image' ? (
+                  <img
+                    src={file.data}
+                    alt={file.name}
+                    className="h-20 rounded-lg"
+                    style={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                  />
+                ) : (
+                  <div
+                    className="h-20 w-20 rounded-lg flex items-center justify-center"
+                    style={{
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'var(--darker-bg)',
+                    }}
+                  >
+                    <div className="text-center px-2">
+                      <svg width="24" height="24" fill="none" stroke="var(--gray-med)" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <div
+                        className="text-xs mt-1"
+                        style={{
+                          color: 'var(--gray-light)',
+                          fontSize: '9px',
+                          wordBreak: 'break-all',
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {file.name.slice(0, 10)}...
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => removeFile(idx)}
+                  style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '-8px',
+                    background: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'transform 0.2s, background 0.2s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = '#dc2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = '#ef4444';
+                  }}
+                  title={`Remove ${file.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="input-container">
+        <div className="input-wrapper">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onInput={handleInput}
+            placeholder="Message Zarvânex..."
+            disabled={disabled}
+            rows={1}
+            className="message-input"
+          />
+
+          {/* Action buttons */}
+          <div className="input-actions">
+            {/* Hidden file inputs */}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.gif"
+              multiple
+              onChange={(e) => handleFileUpload(e, 'image')}
+              className="hidden"
+            />
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".txt,.pdf,.md,.csv,.json,.log,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf"
+              multiple
+              onChange={(e) => handleFileUpload(e, 'document')}
+              className="hidden"
+            />
+
+            {/* Attach button with dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                disabled={disabled || files.length >= MAX_FILES}
+                className="action-btn"
+                title="Attach files (up to 10, max 10MB each)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </button>
+
+                {/* Dropdown menu */}
+                {showAttachMenu && (
+                  <>
+                    <div
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 10,
+                      }}
+                      onClick={() => setShowAttachMenu(false)}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: 0,
+                        marginBottom: '8px',
+                        background: 'var(--darker-bg)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                        minWidth: '160px',
+                        zIndex: 20,
+                      }}
+                    >
+                      <button
+                        onClick={() => {
+                          imageInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--gray-med)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          borderRadius: '8px 8px 0 0',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Images
+                      </button>
+                      <button
+                        onClick={() => {
+                          documentInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          background: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: 'var(--gray-med)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                          borderRadius: '0 0 8px 8px',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Documents
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+            {/* Voice input button (placeholder for future feature) */}
+            <button
+              disabled={disabled}
+              className="action-btn"
+              title="Voice Input (Coming Soon)"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Send button */}
+        <button
+          onClick={handleSend}
+          disabled={disabled || (!message.trim() && files.length === 0)}
+          className="send-btn"
+        >
+          Send
+        </button>
+      </div>
+
+      {/* Error message */}
+      {fileError && (
+        <div
+          style={{
+            fontSize: '12px',
+            color: '#ff6b6b',
+            marginTop: '8px',
+            padding: '8px 12px',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 107, 107, 0.3)',
+          }}
+        >
+          {fileError}
+        </div>
+      )}
+
+      {/* File count indicator */}
+      {files.length > 0 && (
+        <div
+          style={{
+            fontSize: '11px',
+            color: 'var(--gray-light)',
+            marginTop: '4px',
+            textAlign: 'right',
+          }}
+        >
+          {files.length}/{MAX_FILES} files attached (max 10MB each)
+        </div>
+      )}
+    </div>
+  );
+}

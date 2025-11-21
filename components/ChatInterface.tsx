@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
@@ -9,13 +10,21 @@ import Login from './Login';
 import NotificationSetup from './NotificationSetup';
 import SaveMomentModal from './SaveMomentModal';
 import { sendMessage, getAvailableModels, generateTitle } from '@/lib/lmstudio';
+import { GROQ_MODELS } from '@/lib/groq';
+import { OPENROUTER_MODELS } from '@/lib/openrouter';
+import { OPENAI_MODELS } from '@/lib/openai';
+import { CLAUDE_MODELS } from '@/lib/claude';
+import { COHERE_MODELS } from '@/lib/cohere';
 import type { Conversation, Message, Model } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useReminders } from '@/hooks/useReminders';
 import { useProactiveAI } from '@/hooks/useProactiveAI';
+import { extractionTrigger } from '@/lib/memory/extractionTrigger';
 
 export default function ChatInterface() {
+  const router = useRouter();
+
   // Firebase hooks
   const { user, loading: authLoading } = useAuth();
   const {
@@ -50,33 +59,147 @@ export default function ChatInterface() {
   // Load available models on mount
   useEffect(() => {
     loadModels();
+
+    // Initialize memory database
+    import('@/lib/db/memoryDB').then(({ memoryDB }) => {
+      memoryDB.init().catch(error => {
+        console.error('Failed to initialize memory database:', error);
+      });
+    });
   }, []);
 
   const loadModels = async () => {
     try {
+      // Load Ollama models
       const modelIds = await getAvailableModels();
-      const modelList: Model[] = modelIds.map((id) => ({
+      const ollamaModels: Model[] = modelIds.map((id) => ({
         id,
         name: id,
-        type: 'base',
+        type: 'base' as const,
         supportsVision: id.toLowerCase().includes('vision') ||
                         id.toLowerCase().includes('llava') ||
-                        id.toLowerCase().includes('qwen'),
+                        id.toLowerCase().includes('qwen3-vl'),
+        provider: 'ollama' as const,
       }));
-      setModels(modelList);
-      if (modelList.length > 0 && !selectedModel) {
-        setSelectedModel(modelList[0].id);
+
+      // Add OpenRouter free models
+      const openrouterModels: Model[] = OPENROUTER_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'openrouter' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        isFree: model.isFree,
+      }));
+
+      // Add Groq models
+      const groqModels: Model[] = GROQ_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'groq' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        isFree: model.isFree,
+      }));
+
+      // Add OpenAI models
+      const openaiModels: Model[] = OPENAI_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'openai' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        supportsVision: model.supportsVision,
+        isFree: model.isFree,
+      }));
+
+      // Add Claude models
+      const claudeModels: Model[] = CLAUDE_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'claude' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        supportsVision: model.supportsVision,
+        isFree: model.isFree,
+      }));
+
+      // Add Cohere models
+      const cohereModels: Model[] = COHERE_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'cohere' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        supportsVision: model.supportsVision,
+        isFree: model.isFree,
+      }));
+
+      // Combine all models (OpenRouter first for free models, then Groq, then OpenAI, Claude, Cohere, and Ollama)
+      const allModels = [...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels, ...cohereModels, ...ollamaModels];
+      setModels(allModels);
+
+      if (allModels.length > 0 && !selectedModel) {
+        // Default to first OpenRouter model (free with thinking mode)
+        setSelectedModel(openrouterModels[0]?.id || groqModels[0]?.id || allModels[0].id);
       }
     } catch (error) {
       console.error('Error loading models:', error);
-      // Set default models if API is not available
-      const defaultModels: Model[] = [
-        { id: 'qwen3-vl-8b-base', name: 'Qwen3 VL 8B (Base)', type: 'base', supportsVision: true },
-        { id: 'qwen3-vl-8b-shadows', name: 'Qwen3 VL 8B (Shadows Fine-tune)', type: 'fine-tuned', supportsVision: true },
-        { id: 'qwen3-vl-8b-philosophy', name: 'Qwen3 VL 8B (Philosophy Fine-tune)', type: 'fine-tuned', supportsVision: true },
-      ];
-      setModels(defaultModels);
-      setSelectedModel(defaultModels[0].id);
+      // Set cloud models as fallback (always available)
+      const openrouterModels: Model[] = OPENROUTER_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'openrouter' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        isFree: model.isFree,
+      }));
+      const groqModels: Model[] = GROQ_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'groq' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        isFree: model.isFree,
+      }));
+      const openaiModels: Model[] = OPENAI_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'openai' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        supportsVision: model.supportsVision,
+        isFree: model.isFree,
+      }));
+      const claudeModels: Model[] = CLAUDE_MODELS.map((model) => ({
+        id: model.id,
+        name: model.name,
+        type: 'base' as const,
+        description: model.description,
+        provider: 'claude' as const,
+        contextWindow: model.contextWindow,
+        hasThinkingMode: model.hasThinkingMode,
+        supportsVision: model.supportsVision,
+        isFree: model.isFree,
+      }));
+      setModels([...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels]);
+      setSelectedModel(openrouterModels[0].id);
     }
   };
 
@@ -89,6 +212,316 @@ export default function ChatInterface() {
     } catch (error) {
       console.error('Error creating conversation:', error);
     }
+  };
+
+  // Helper function to send message to Groq API with streaming
+  const sendGroqMessage = async (messages: Message[], modelId: string): Promise<string> => {
+    const response = await fetch('/api/chat/groq', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        modelId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error ${response.status}`);
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamingContent((prev) => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return fullResponse;
+  };
+
+  // Helper function to send message to OpenRouter API with streaming
+  const sendOpenRouterMessage = async (messages: Message[], modelId: string): Promise<string> => {
+    const response = await fetch('/api/chat/openrouter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        modelId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error ${response.status}`);
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamingContent((prev) => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return fullResponse;
+  };
+
+  // Helper function to send message to OpenAI API with streaming
+  const sendOpenAIMessage = async (messages: Message[], modelId: string): Promise<string> => {
+    const response = await fetch('/api/chat/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        modelId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error ${response.status}`);
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamingContent((prev) => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return fullResponse;
+  };
+
+  // Helper function to send message to Claude API with streaming
+  const sendClaudeMessage = async (messages: Message[], modelId: string): Promise<string> => {
+    const response = await fetch('/api/chat/claude', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        modelId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error ${response.status}`);
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamingContent((prev) => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return fullResponse;
+  };
+
+  // Helper function to send message to Cohere API with streaming
+  const sendCohereMessage = async (messages: Message[], modelId: string): Promise<string> => {
+    const response = await fetch('/api/chat/cohere', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        modelId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error ${response.status}`);
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamingContent((prev) => prev + parsed.content);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return fullResponse;
   };
 
   const handleSendMessage = async (content: string, images?: string[]) => {
@@ -163,6 +596,9 @@ export default function ChatInterface() {
     setIsLoading(true);
     setStreamingContent('');
 
+    // Track performance metrics
+    const startTime = Date.now();
+
     try {
       // Get updated conversation with the user message
       const updatedConversation = conversations.find((c) => c.id === conversationId);
@@ -170,18 +606,50 @@ export default function ChatInterface() {
         ? [...updatedConversation.messages, userMessage]
         : [userMessage];
 
-      console.log('Sending message to LM Studio...', {
+      // Determine provider based on selected model
+      const currentModel = models.find(m => m.id === selectedModel);
+      const provider = currentModel?.provider || 'ollama';
+
+      console.log('Sending message...', {
+        provider,
+        model: selectedModel,
         messageCount: allMessages.length,
         hasFiles: !!images?.length,
         fileCount: images?.length || 0
       });
 
-      // Send to LM Studio with streaming
-      const response = await sendMessage(allMessages, selectedModel, (chunk) => {
-        setStreamingContent((prev) => prev + chunk);
-      });
+      let response: string;
 
-      console.log('Response received from LM Studio');
+      // Route to appropriate provider
+      if (provider === 'openrouter') {
+        // Use OpenRouter API via our route
+        response = await sendOpenRouterMessage(allMessages, selectedModel);
+      } else if (provider === 'groq') {
+        // Use Groq API via our route
+        response = await sendGroqMessage(allMessages, selectedModel);
+      } else if (provider === 'openai') {
+        // Use OpenAI API via our route
+        response = await sendOpenAIMessage(allMessages, selectedModel);
+      } else if (provider === 'claude') {
+        // Use Claude API via our route
+        response = await sendClaudeMessage(allMessages, selectedModel);
+      } else if (provider === 'cohere') {
+        // Use Cohere API via our route
+        response = await sendCohereMessage(allMessages, selectedModel);
+      } else {
+        // Use Ollama (default)
+        response = await sendMessage(allMessages, selectedModel, (chunk) => {
+          setStreamingContent((prev) => prev + chunk);
+        });
+      }
+
+      console.log('Response received');
+
+      // Calculate performance metrics
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+      // Rough token estimate: ~4 characters per token for English text
+      const estimatedTokens = Math.ceil(response.length / 4);
 
       // Add assistant message to Firestore
       const assistantMessage: Message = {
@@ -189,9 +657,24 @@ export default function ChatInterface() {
         role: 'assistant',
         content: response,
         timestamp: new Date(),
+        modelId: selectedModel,
+        modelName: currentModel?.name,
+        performance: {
+          responseTime,
+          tokenCount: estimatedTokens,
+          startTime,
+          endTime,
+        },
       };
 
       await addMessage(conversationId, assistantMessage);
+
+      // Trigger memory extraction after message exchange
+      const fullConversation = [...allMessages, assistantMessage];
+      extractionTrigger.onMessageSent(conversationId, fullConversation.map(m => ({
+        role: m.role,
+        content: m.content
+      })));
 
       // Generate AI-based title after first exchange (using saved flag)
       if (isFirstMessage) {
@@ -209,11 +692,33 @@ export default function ChatInterface() {
     } catch (error) {
       console.error('Error sending message:', error);
       // Show error message
+      const currentModel = models.find(m => m.id === selectedModel);
+      const provider = currentModel?.provider || 'ollama';
+
+      let errorContent = 'Sorry, I encountered an error. ';
+      if (provider === 'ollama') {
+        errorContent += 'Please make sure Ollama is running on http://localhost:11434';
+      } else if (provider === 'groq') {
+        errorContent += 'Please check your Groq API key configuration.';
+      } else if (provider === 'openrouter') {
+        errorContent += 'Please check your OpenRouter API key configuration.';
+      } else if (provider === 'openai') {
+        errorContent += 'Please check your OpenAI API key configuration.';
+      } else if (provider === 'claude') {
+        errorContent += 'Please check your Claude API key configuration.';
+      } else if (provider === 'cohere') {
+        errorContent += 'Please check your Cohere API key configuration.';
+      } else {
+        errorContent += 'Please check your API configuration.';
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please make sure LM Studio is running on http://localhost:1234',
+        content: errorContent,
         timestamp: new Date(),
+        modelId: selectedModel,
+        modelName: currentModel?.name,
       };
 
       try {
@@ -248,16 +753,33 @@ export default function ChatInterface() {
     setIsLoading(true);
     setStreamingContent('');
 
+    // Track performance metrics
+    const startTime = Date.now();
+
     try {
       const response = await sendMessage(messagesBeforeRegenerate, selectedModel, (chunk) => {
         setStreamingContent((prev) => prev + chunk);
       });
 
+      // Calculate performance metrics
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+      const estimatedTokens = Math.ceil(response.length / 4);
+
+      const currentModel = models.find(m => m.id === selectedModel);
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response,
         timestamp: new Date(),
+        modelId: selectedModel,
+        modelName: currentModel?.name,
+        performance: {
+          responseTime,
+          tokenCount: estimatedTokens,
+          startTime,
+          endTime,
+        },
       };
 
       await addMessage(activeConversationId, assistantMessage);
@@ -288,6 +810,16 @@ export default function ChatInterface() {
 
     // Switch to the new conversation
     setActiveConversationId(newConversationId);
+  };
+
+  const handleResend = async (messageIndex: number) => {
+    if (!activeConversation) return;
+
+    const messageToResend = activeConversation.messages[messageIndex];
+    if (messageToResend.role !== 'user') return;
+
+    // Resend the message with its content and images
+    await handleSendMessage(messageToResend.content, messageToResend.images);
   };
 
   const scrollToTop = () => {
@@ -386,6 +918,10 @@ export default function ChatInterface() {
         }}
         onRenameConversation={async (id, newTitle) => {
           await updateConversation(id, { title: newTitle });
+        }}
+        onNavigateToMap={() => {
+          router.push('/gotham-map');
+          setIsMobileMenuOpen(false);
         }}
         className={isMobileMenuOpen ? 'mobile-open' : ''}
       />
@@ -539,6 +1075,11 @@ export default function ChatInterface() {
                           ? () => handleRegenerate(index)
                           : undefined
                       }
+                      onResend={
+                        message.role === 'user'
+                          ? () => handleResend(index)
+                          : undefined
+                      }
                       onBranch={() => handleBranch(index)}
                       onSaveMoment={
                         message.role === 'assistant'
@@ -557,6 +1098,7 @@ export default function ChatInterface() {
                             }
                           : undefined
                       }
+                      allMessages={activeConversation.messages}
                     />
                   </div>
                 );
@@ -569,6 +1111,8 @@ export default function ChatInterface() {
                     role: 'assistant',
                     content: streamingContent,
                     timestamp: new Date(),
+                    modelId: selectedModel,
+                    modelName: models.find(m => m.id === selectedModel)?.name,
                   }}
                 />
               )}
