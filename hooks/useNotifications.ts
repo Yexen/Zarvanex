@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { messaging, getToken, onMessage } from '@/lib/firebase';
+import { getFirebaseMessaging, getToken, onMessage } from '@/lib/firebase';
 import { useAuth } from './useAuth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDB } from '@/lib/firebase';
 
 export function useNotifications() {
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export function useNotifications() {
 
   const requestPermission = async () => {
     try {
-      if (!messaging) {
+      if (!getFirebaseMessaging()) {
         throw new Error('Messaging not supported');
       }
 
@@ -31,7 +31,7 @@ export function useNotifications() {
 
       if (permission === 'granted') {
         // Get FCM token
-        const token = await getToken(messaging, {
+        const token = await getToken(getFirebaseMessaging(), {
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         });
 
@@ -40,7 +40,7 @@ export function useNotifications() {
 
           // Save token to Firestore for this user
           if (user) {
-            await addDoc(collection(db, 'fcmTokens'), {
+            await addDoc(collection(getFirebaseDB(), 'fcmTokens'), {
               userId: user.uid,
               token,
               createdAt: serverTimestamp(),
@@ -58,9 +58,9 @@ export function useNotifications() {
   };
 
   useEffect(() => {
-    if (messaging && permission === 'granted') {
+    if (getFirebaseMessaging() && permission === 'granted') {
       // Handle foreground messages
-      const unsubscribe = onMessage(messaging, (payload) => {
+      const unsubscribe = onMessage(getFirebaseMessaging(), (payload) => {
         console.log('Foreground message received:', payload);
 
         // Show notification in foreground

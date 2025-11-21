@@ -38,6 +38,12 @@ export function useConversations(userId: string | null) {
         const { collection, query, orderBy, onSnapshot } = await import('firebase/firestore');
         const db = getFirebaseDB();
 
+        if (!db) {
+          console.warn('useConversations: Firestore not initialized');
+          setLoading(false);
+          return;
+        }
+
         // Reference to user's conversations collection
         const conversationsRef = collection(db, 'users', userId, 'conversations');
         const q = query(conversationsRef, orderBy('updatedAt', 'desc'));
@@ -168,6 +174,10 @@ export function useConversations(userId: string | null) {
     if (!userId) return;
 
     try {
+      const { getFirebaseDB } = await import('@/lib/firebase');
+      const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+      const db = getFirebaseDB();
+
       const conversationRef = doc(db, 'users', userId, 'conversations', conversationId);
       await updateDoc(conversationRef, {
         ...updates,
@@ -184,6 +194,10 @@ export function useConversations(userId: string | null) {
     if (!userId) return;
 
     try {
+      const { getFirebaseDB } = await import('@/lib/firebase');
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      const db = getFirebaseDB();
+
       const conversationRef = doc(db, 'users', userId, 'conversations', conversationId);
       await deleteDoc(conversationRef);
     } catch (err) {
@@ -197,6 +211,10 @@ export function useConversations(userId: string | null) {
     if (!userId) return;
 
     try {
+      const { getFirebaseDB } = await import('@/lib/firebase');
+      const { doc, updateDoc, Timestamp, serverTimestamp } = await import('firebase/firestore');
+      const db = getFirebaseDB();
+
       const conversationRef = doc(db, 'users', userId, 'conversations', conversationId);
 
       // Convert messages to Firestore format

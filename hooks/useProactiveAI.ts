@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useNotifications } from './useNotifications';
-import { db } from '@/lib/firebase';
+import { getFirebaseDB } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -94,7 +94,7 @@ export function useProactiveAI() {
 
       // Check if we've already scheduled messages for today
       const existingQuery = query(
-        collection(db, 'proactiveMessages'),
+        collection(getFirebaseDB(), 'proactiveMessages'),
         where('userId', '==', user.uid),
         where('scheduledTime', '>=', Timestamp.fromDate(today)),
         where('sent', '==', false)
@@ -122,7 +122,7 @@ export function useProactiveAI() {
         if (scheduledTime > now) {
           const randomMessage = template.messages[Math.floor(Math.random() * template.messages.length)];
 
-          await addDoc(collection(db, 'proactiveMessages'), {
+          await addDoc(collection(getFirebaseDB(), 'proactiveMessages'), {
             userId: user.uid,
             trigger: 'time',
             message: randomMessage,
@@ -159,7 +159,7 @@ export function useProactiveAI() {
     }
 
     const q = query(
-      collection(db, 'proactiveMessages'),
+      collection(getFirebaseDB(), 'proactiveMessages'),
       where('userId', '==', user.uid),
       where('sent', '==', false)
     );
@@ -209,7 +209,7 @@ export function useProactiveAI() {
           );
 
           // Mark as sent
-          await updateDoc(doc(db, 'proactiveMessages', msg.id), {
+          await updateDoc(doc(getFirebaseDB(), 'proactiveMessages', msg.id), {
             sent: true,
           });
         }
@@ -229,7 +229,7 @@ export function useProactiveAI() {
   ) => {
     if (!user) throw new Error('Must be logged in');
 
-    await addDoc(collection(db, 'proactiveMessages'), {
+    await addDoc(collection(getFirebaseDB(), 'proactiveMessages'), {
       userId: user.uid,
       trigger: 'custom',
       message,

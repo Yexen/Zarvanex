@@ -20,6 +20,12 @@ export function useAuth() {
         const { onAuthStateChanged } = await import('firebase/auth');
         const auth = getFirebaseAuth();
 
+        if (!auth) {
+          console.warn('useAuth: Firebase auth not initialized');
+          setLoading(false);
+          return;
+        }
+
         // Listen to auth state changes (no auto anonymous sign-in)
         unsubscribe = onAuthStateChanged(
           auth,
@@ -56,6 +62,7 @@ export function useAuth() {
       const { getFirebaseAuth } = await import('@/lib/firebase');
       const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
       const auth = getFirebaseAuth();
+      if (!auth) throw new Error('Firebase auth not initialized');
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       console.log('Google sign-in successful:', result.user.uid);
@@ -77,6 +84,7 @@ export function useAuth() {
       const { getFirebaseAuth } = await import('@/lib/firebase');
       const { signInWithEmailAndPassword } = await import('firebase/auth');
       const auth = getFirebaseAuth();
+      if (!auth) throw new Error('Firebase auth not initialized');
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Email sign-in successful:', result.user.uid);
       return result.user;
@@ -97,6 +105,7 @@ export function useAuth() {
       const { getFirebaseAuth } = await import('@/lib/firebase');
       const { createUserWithEmailAndPassword } = await import('firebase/auth');
       const auth = getFirebaseAuth();
+      if (!auth) throw new Error('Firebase auth not initialized');
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log('Email sign-up successful:', result.user.uid);
       return result.user;
@@ -115,6 +124,7 @@ export function useAuth() {
       const { getFirebaseAuth } = await import('@/lib/firebase');
       const { signOut: firebaseSignOut } = await import('firebase/auth');
       const auth = getFirebaseAuth();
+      if (!auth) throw new Error('Firebase auth not initialized');
       await firebaseSignOut(auth);
       console.log('Sign-out successful');
     } catch (err) {

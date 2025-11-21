@@ -15,18 +15,52 @@ self.addEventListener('install', (event) => {
 
 // Fetch with network-first strategy
 self.addEventListener('fetch', (event) => {
+  // Only process requests from the same origin to avoid issues with extensions or external resources
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip Next.js development resources and hot module reloading
+  const url = new URL(event.request.url);
+  if (url.pathname.includes('/_next/webpack-hmr') ||
+      url.pathname.includes('/__nextjs_') ||
+      url.searchParams.has('v')) {
+    return;
+  }
+
+  // A network-first, cache-second strategy
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        // If the request is successful, clone the response and cache it
+        if (response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
         return response;
       })
       .catch(() => {
-        return caches.match(event.request);
+        // If the network request fails, try to serve from the cache
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If no cache is available, return a basic offline response
+          return new Response('Offline - No cached version available', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
+        });
       })
   );
 });

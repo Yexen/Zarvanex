@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useNotifications } from './useNotifications';
-import { db } from '@/lib/firebase';
+import { getFirebaseDB } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -43,7 +43,7 @@ export function useReminders() {
     }
 
     const q = query(
-      collection(db, 'reminders'),
+      collection(getFirebaseDB(), 'reminders'),
       where('userId', '==', user.uid),
       where('completed', '==', false)
     );
@@ -91,7 +91,7 @@ export function useReminders() {
           });
 
           // Mark as notified
-          await updateDoc(doc(db, 'reminders', reminder.id), {
+          await updateDoc(doc(getFirebaseDB(), 'reminders', reminder.id), {
             notified: true,
           });
 
@@ -112,7 +112,7 @@ export function useReminders() {
             }
 
             // Create new reminder for next occurrence
-            await addDoc(collection(db, 'reminders'), {
+            await addDoc(collection(getFirebaseDB(), 'reminders'), {
               userId: user.uid,
               title: reminder.title,
               message: reminder.message,
@@ -125,7 +125,7 @@ export function useReminders() {
             });
 
             // Mark current reminder as completed
-            await updateDoc(doc(db, 'reminders', reminder.id), {
+            await updateDoc(doc(getFirebaseDB(), 'reminders', reminder.id), {
               completed: true,
             });
           }
@@ -149,7 +149,7 @@ export function useReminders() {
   ) => {
     if (!user) throw new Error('Must be logged in to create reminders');
 
-    await addDoc(collection(db, 'reminders'), {
+    await addDoc(collection(getFirebaseDB(), 'reminders'), {
       userId: user.uid,
       title,
       message,
@@ -163,11 +163,11 @@ export function useReminders() {
   };
 
   const deleteReminder = async (reminderId: string) => {
-    await deleteDoc(doc(db, 'reminders', reminderId));
+    await deleteDoc(doc(getFirebaseDB(), 'reminders', reminderId));
   };
 
   const completeReminder = async (reminderId: string) => {
-    await updateDoc(doc(db, 'reminders', reminderId), {
+    await updateDoc(doc(getFirebaseDB(), 'reminders', reminderId), {
       completed: true,
     });
   };
