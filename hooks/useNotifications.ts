@@ -30,8 +30,14 @@ export function useNotifications() {
       setPermission(permission);
 
       if (permission === 'granted') {
+        const messaging = getFirebaseMessaging();
+        if (!messaging) {
+          console.warn('Firebase Messaging not available');
+          return;
+        }
+
         // Get FCM token
-        const token = await getToken(getFirebaseMessaging(), {
+        const token = await getToken(messaging, {
           vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         });
 
@@ -58,9 +64,10 @@ export function useNotifications() {
   };
 
   useEffect(() => {
-    if (getFirebaseMessaging() && permission === 'granted') {
+    const messaging = getFirebaseMessaging();
+    if (messaging && permission === 'granted') {
       // Handle foreground messages
-      const unsubscribe = onMessage(getFirebaseMessaging(), (payload) => {
+      const unsubscribe = onMessage(messaging, (payload) => {
         console.log('Foreground message received:', payload);
 
         // Show notification in foreground

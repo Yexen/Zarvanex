@@ -19,7 +19,7 @@ export async function sendClaudeMessage(
 
   // Convert our messages to Claude format
   const formattedMessages = messages.map((msg) => ({
-    role: msg.role === 'assistant' ? 'assistant' : 'user',
+    role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
     content: msg.content,
   }));
 

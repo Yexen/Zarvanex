@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zarvanex-v1';
+const CACHE_NAME = 'zarvanex-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',

@@ -10,13 +10,13 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { getFirebaseDB } from './firebase';
 import type { Conversation } from '@/types';
 
 const CONVERSATIONS_COLLECTION = 'conversations';
 
 export async function saveConversation(userId: string, conversation: Conversation): Promise<void> {
-  if (!db) return;
+  const db = getFirebaseDB();
 
   const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversation.id);
   await setDoc(conversationRef, {
@@ -32,7 +32,7 @@ export async function saveConversation(userId: string, conversation: Conversatio
 }
 
 export async function loadConversations(userId: string): Promise<Conversation[]> {
-  if (!db) return [];
+  const db = getFirebaseDB();
 
   const conversationsQuery = query(
     collection(db, CONVERSATIONS_COLLECTION),
@@ -57,14 +57,14 @@ export async function loadConversations(userId: string): Promise<Conversation[]>
 }
 
 export async function deleteConversation(conversationId: string): Promise<void> {
-  if (!db) return;
+  const db = getFirebaseDB();
 
   const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
   await deleteDoc(conversationRef);
 }
 
 export async function getConversation(conversationId: string): Promise<Conversation | null> {
-  if (!db) return null;
+  const db = getFirebaseDB();
 
   const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
   const snapshot = await getDoc(conversationRef);
