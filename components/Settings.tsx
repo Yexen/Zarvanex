@@ -11,12 +11,15 @@ interface SettingsProps {
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   const { user } = useAuth();
-  const { preferences, loading, updateNickname, updateBio, updateNotificationSettings, updatePrivacySettings } = useUserPreferences(user?.id || null);
+  const { preferences, loading, updatePreferences, updateNickname, updateBio, updateNotificationSettings, updatePrivacySettings } = useUserPreferences(user?.id || null);
   
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
     nickname: '',
     bio: '',
+    conversationStyle: 'friendly',
+    interests: '',
+    extendedBio: '',
     notifications: {
       email: true,
       push: true,
@@ -36,6 +39,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       setFormData({
         nickname: preferences.nickname || '',
         bio: preferences.bio || '',
+        conversationStyle: preferences.conversation_style?.tone || 'friendly',
+        interests: preferences.interests?.join(', ') || '',
+        extendedBio: preferences.extended_bio || '',
         notifications: preferences.notifications,
         privacy: preferences.privacy_settings,
       });
@@ -54,6 +60,11 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
         updateBio(formData.bio),
         updateNotificationSettings(formData.notifications),
         updatePrivacySettings(formData.privacy),
+        updatePreferences({
+          conversation_style: { tone: formData.conversationStyle },
+          interests: formData.interests.split(',').map(i => i.trim()).filter(Boolean),
+          extended_bio: formData.extendedBio || undefined,
+        }),
       ]);
       
       setSaveStatus('Settings saved successfully!');
@@ -97,6 +108,15 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       )
     },
     { 
+      id: 'personalization', 
+      label: 'Personalization', 
+      icon: (
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      )
+    },
+    { 
       id: 'system', 
       label: 'System', 
       icon: (
@@ -135,7 +155,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
         <div style={{ display: 'flex', height: '500px' }}>
           {/* Sidebar */}
           <div style={{ 
-            width: '200px', 
+            width: '240px', 
             background: 'var(--darker-bg)', 
             borderRight: '1px solid rgba(255, 255, 255, 0.1)',
             padding: '20px 0'
@@ -432,6 +452,117 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                         </label>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {activeTab === 'personalization' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '18px', marginBottom: '20px', fontWeight: '600' }}>
+                      AI Personalization
+                    </h4>
+                    
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: 'var(--gray-med)', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}>
+                        Conversation Style
+                      </label>
+                      <select
+                        value={formData.conversationStyle || 'friendly'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, conversationStyle: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-dark)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: 'var(--gray-light)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="friendly">Friendly & Conversational</option>
+                        <option value="professional">Professional</option>
+                        <option value="casual">Casual</option>
+                        <option value="direct">Direct & Concise</option>
+                        <option value="detailed">Detailed & Thorough</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: 'var(--gray-med)', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}>
+                        Main Interests (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.interests || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, interests: e.target.value }))}
+                        placeholder="technology, coding, AI, productivity"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-dark)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: 'var(--gray-light)',
+                          fontSize: '14px',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: 'var(--gray-med)', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}>
+                        Extended Bio
+                      </label>
+                      <textarea
+                        value={formData.extendedBio || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, extendedBio: e.target.value }))}
+                        placeholder="Tell the AI more about yourself - your background, preferences, goals, communication style, etc."
+                        rows={6}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-dark)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: 'var(--gray-light)',
+                          fontSize: '14px',
+                          resize: 'vertical',
+                          minHeight: '120px',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ 
+                      padding: '16px',
+                      background: 'rgba(64, 224, 208, 0.1)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(64, 224, 208, 0.2)',
+                      marginBottom: '24px'
+                    }}>
+                      <div style={{ color: 'var(--teal-bright)', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                        💡 How Personalization Works
+                      </div>
+                      <div style={{ color: 'var(--gray-med)', fontSize: '12px', lineHeight: '1.5' }}>
+                        Your personalization settings create a custom system prompt that tells the AI how to interact with you. 
+                        This includes your preferred communication style, interests, and context about yourself.
+                      </div>
+                    </div>
                   </div>
                 )}
 
