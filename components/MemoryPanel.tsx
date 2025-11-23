@@ -3,12 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { memoryStorage } from '@/lib/memoryStorage';
+import { hardMemorySupabase } from '@/lib/hardMemorySupabase';
 import FolderTree from './FolderTree';
 import MemoryEditor from './MemoryEditor';
 import type { MemoryView, MemoryPanelState, Memory, Folder, TreeNode } from '@/types/memory';
 
 export default function MemoryPanel() {
   const { user } = useAuth();
+  
+  // Check if Supabase is available
+  const isSupabaseAvailable = () => {
+    return Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && 
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+  };
+  
   const [state, setState] = useState<MemoryPanelState>({
     currentView: 'browse',
     selectedMemoryId: null,
@@ -56,10 +66,22 @@ export default function MemoryPanel() {
     if (!user?.id) return;
 
     try {
-      const [memoriesData, foldersData] = await Promise.all([
-        memoryStorage.getAllMemories(user.id),
-        memoryStorage.getAllFolders(user.id)
-      ]);
+      let memoriesData: Memory[];
+      let foldersData: Folder[];
+
+      if (isSupabaseAvailable()) {
+        // Use Supabase when available
+        [memoriesData, foldersData] = await Promise.all([
+          hardMemorySupabase.getAllMemories(user.id),
+          hardMemorySupabase.getAllFolders(user.id)
+        ]);
+      } else {
+        // Fallback to IndexedDB
+        [memoriesData, foldersData] = await Promise.all([
+          memoryStorage.getAllMemories(user.id),
+          memoryStorage.getAllFolders(user.id)
+        ]);
+      }
 
       setMemories(memoriesData);
       setFolders(foldersData);
@@ -193,14 +215,24 @@ export default function MemoryPanel() {
     try {
       if (selectedMemory) {
         // Update existing memory
-        await memoryStorage.updateMemory(selectedMemory.id, memoryData);
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.updateMemory(selectedMemory.id, memoryData);
+        } else {
+          await memoryStorage.updateMemory(selectedMemory.id, memoryData);
+        }
       } else {
         // Create new memory
-        await memoryStorage.saveMemory({
+        const newMemoryData = {
           ...memoryData,
           userId: user.id,
           folderId: memoryData.folderId || state.selectedFolderId
-        } as Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>);
+        } as Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>;
+        
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.saveMemory(newMemoryData);
+        } else {
+          await memoryStorage.saveMemory(newMemoryData);
+        }
       }
       await loadData();
     } catch (error) {
@@ -212,7 +244,11 @@ export default function MemoryPanel() {
     if (!selectedMemory) return;
 
     try {
-      await memoryStorage.deleteMemory(selectedMemory.id);
+      if (isSupabaseAvailable()) {
+        await hardMemorySupabase.deleteMemory(selectedMemory.id);
+      } else {
+        await memoryStorage.deleteMemory(selectedMemory.id);
+      }
       setSelectedMemory(null);
       setState(prev => ({ ...prev, selectedMemoryId: null }));
       setIsCreatingMemory(false);
@@ -231,9 +267,17 @@ export default function MemoryPanel() {
 
     try {
       if (type === 'folder') {
-        await memoryStorage.deleteFolder(nodeId);
+        if (isSupabaseAvailable() && user?.id) {
+          await hardMemorySupabase.deleteFolder(nodeId, user.id);
+        } else {
+          await memoryStorage.deleteFolder(nodeId);
+        }
       } else {
-        await memoryStorage.deleteMemory(nodeId);
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.deleteMemory(nodeId);
+        } else {
+          await memoryStorage.deleteMemory(nodeId);
+        }
       }
       
       // Clear selection if we deleted the selected item
@@ -259,7 +303,12 @@ export default function MemoryPanel() {
     }
 
     try {
-      const results = await memoryStorage.searchMemories(query, state.searchTags);
+      let results: Memory[];
+      if (isSupabaseAvailable() && user?.id) {
+        results = await hardMemorySupabase.searchMemories(query, state.searchTags, user.id);
+      } else {
+        results = await memoryStorage.searchMemories(query, state.searchTags);
+      }
       setSearchResults(results);
     } catch (error) {
       console.error('Error searching memories:', error);
