@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserPreferences } from '@/hooks/useUserPreferences';
+import UserProfile from './UserProfile';
+import { useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 import SettingsExtended from '@/components/SettingsExtended';
 
 interface SettingsProps {
@@ -12,7 +13,7 @@ interface SettingsProps {
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   const { user } = useAuth();
-  const { preferences, loading, updatePreferences, updateNickname, updateBio, updateNotificationSettings, updatePrivacySettings } = useUserPreferences(user?.id || null);
+  const { preferences, loading, updatePreferences, updateNickname, updateBio, updateNotificationSettings, updatePrivacySettings } = useUserPreferencesContext();
   
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
@@ -218,31 +219,29 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                       Profile Information
                     </h4>
                     
+                    {/* Profile Section */}
                     <div style={{ marginBottom: '24px' }}>
                       <label style={{ 
                         display: 'block', 
                         color: 'var(--gray-med)', 
-                        marginBottom: '8px', 
+                        marginBottom: '12px', 
                         fontSize: '14px',
                         fontWeight: '500'
                       }}>
-                        Email
+                        Profile
                       </label>
-                      <input
-                        type="email"
-                        value={user?.email || ''}
-                        disabled
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          background: 'var(--darker-bg)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          borderRadius: '8px',
-                          color: 'var(--gray-light)',
-                          fontSize: '14px',
-                          opacity: 0.6,
-                        }}
-                      />
+                      <div style={{
+                        padding: '16px',
+                        background: 'var(--darker-bg)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                      }}>
+                        <UserProfile 
+                          size="large" 
+                          showEmail={true}
+                          showUpload={true}
+                        />
+                      </div>
                     </div>
 
                     <div style={{ marginBottom: '24px' }}>

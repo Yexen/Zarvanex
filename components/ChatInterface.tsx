@@ -156,10 +156,7 @@ function ChatInterfaceInner() {
       const allModels = [...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels, ...cohereModels, ...ollamaModels];
       setModels(allModels);
 
-      if (allModels.length > 0 && !selectedModel) {
-        // Default to first OpenRouter model (free with thinking mode)
-        setSelectedModel(openrouterModels[0]?.id || groqModels[0]?.id || allModels[0].id);
-      }
+      // Don't auto-select any model - user should choose
     } catch (error) {
       console.error('Error loading models:', error);
       // Set cloud models as fallback (always available)
@@ -206,7 +203,7 @@ function ChatInterfaceInner() {
         isFree: model.isFree,
       }));
       setModels([...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels]);
-      setSelectedModel(openrouterModels[0].id);
+      // Don't auto-select any model - user should choose
     }
   };
 
@@ -224,6 +221,11 @@ function ChatInterfaceInner() {
   // Helper function to send message to Groq API with streaming
   const sendGroqMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
+    console.log('🎯 sendGroqMessage: Generating system prompt', { 
+      hasPreferences: !!preferences, 
+      shouldInclude: shouldIncludePersonalization(preferences),
+      preferencesNickname: preferences?.nickname 
+    });
     const systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
       : undefined;
@@ -298,6 +300,11 @@ function ChatInterfaceInner() {
   // Helper function to send message to OpenRouter API with streaming
   const sendOpenRouterMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
+    console.log('🎯 sendOpenRouterMessage: Generating system prompt', { 
+      hasPreferences: !!preferences, 
+      shouldInclude: shouldIncludePersonalization(preferences),
+      preferencesNickname: preferences?.nickname 
+    });
     const systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
       : undefined;
@@ -595,6 +602,12 @@ function ChatInterfaceInner() {
     // Prevent multiple simultaneous calls
     if (isLoading) {
       console.log('Already loading, ignoring duplicate send request');
+      return;
+    }
+
+    // Require model selection
+    if (!selectedModel) {
+      alert('Please select a model first');
       return;
     }
 

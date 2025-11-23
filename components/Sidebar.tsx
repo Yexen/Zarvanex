@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import UserProfile from './UserProfile';
 import Settings from './Settings';
 import PWAInstallButton from './PWAInstallButton';
 import type { Conversation } from '@/types';
@@ -333,12 +334,10 @@ export default function Sidebar({
                 borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                 marginBottom: '8px'
               }}>
-                <div style={{ color: 'var(--gray-light)', fontSize: '12px', marginBottom: '4px' }}>
-                  Signed in as
-                </div>
-                <div style={{ color: 'var(--gray-med)', fontSize: '14px', fontWeight: 500 }}>
-                  {user.email || 'User'}
-                </div>
+                <UserProfile 
+                  size="medium" 
+                  showLogout={true}
+                />
               </div>
             )}
 
