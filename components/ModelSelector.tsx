@@ -109,6 +109,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setHoveredModel(null); // Clear tooltip when dropdown closes
       }
     };
 
@@ -117,6 +118,18 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen]);
+
+  // Clear tooltip when dropdown closes or model changes
+  useEffect(() => {
+    if (!isOpen) {
+      setHoveredModel(null);
+    }
+  }, [isOpen]);
+
+  // Clear tooltip when selected model changes
+  useEffect(() => {
+    setHoveredModel(null);
+  }, [selectedModel]);
 
   const handleMouseEnter = (model: Model, element: HTMLDivElement) => {
     setHoveredModel(model);
@@ -270,6 +283,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
@@ -323,6 +337,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
@@ -376,6 +391,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
@@ -429,6 +445,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
@@ -482,6 +499,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
@@ -535,6 +553,7 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
                   onClick={() => {
                     onSelectModel(model.id);
                     setIsOpen(false);
+                    setHoveredModel(null); // Clear tooltip when model is selected
                   }}
                   style={{
                     padding: '8px 12px',
