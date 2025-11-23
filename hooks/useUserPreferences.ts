@@ -7,6 +7,8 @@ import type { UserPreferences } from '@/types';
 const defaultPreferences: Partial<UserPreferences> = {
   theme: 'dark',
   language: 'en',
+  interests: [],
+  skills: [],
   notifications: {
     email: true,
     push: true,
@@ -15,6 +17,39 @@ const defaultPreferences: Partial<UserPreferences> = {
   privacy_settings: {
     profile_visible: true,
     activity_visible: false,
+  },
+  conversation_style: {
+    tone: 'balanced',
+    formality: 'casual',
+    verbosity: 'detailed',
+    humor: true,
+    empathy_level: 'high',
+    technical_depth: 'medium',
+  },
+  communication_prefs: {
+    preferred_greeting: 'Hello',
+    response_length: 'detailed',
+    explanation_style: 'examples',
+    feedback_preference: 'constructive',
+    learning_style: 'visual_and_text',
+  },
+  context_preferences: {
+    remember_conversations: true,
+    use_context_from_previous: true,
+    personalization_level: 'high',
+    adapt_to_patterns: true,
+  },
+  content_preferences: {
+    topics_of_interest: [],
+    expertise_areas: [],
+    content_filters: [],
+    preferred_examples: 'real_world',
+  },
+  accessibility_prefs: {
+    font_size: 'medium',
+    high_contrast: false,
+    screen_reader_friendly: false,
+    reduced_motion: false,
   },
 };
 

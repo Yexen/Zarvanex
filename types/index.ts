@@ -57,9 +57,59 @@ export interface UserProfile {
 export interface UserPreferences {
   id: string;
   user_id: string;
+  
+  // Basic Profile Info
   nickname?: string;
+  display_name?: string;
   bio?: string;
   avatar_url?: string;
+  location?: string;
+  website?: string;
+  pronouns?: string;
+  
+  // Extended Personal Info
+  occupation?: string;
+  interests?: string[];
+  skills?: string[];
+  goals?: string;
+  background?: string;
+  
+  // AI Interaction Preferences
+  conversation_style: {
+    tone: 'professional' | 'casual' | 'friendly' | 'balanced';
+    formality: 'formal' | 'casual' | 'adaptive';
+    verbosity: 'concise' | 'detailed' | 'comprehensive';
+    humor: boolean;
+    empathy_level: 'low' | 'medium' | 'high';
+    technical_depth: 'basic' | 'medium' | 'advanced';
+  };
+  
+  // Communication Preferences
+  communication_prefs: {
+    preferred_greeting: string;
+    response_length: 'brief' | 'detailed' | 'comprehensive';
+    explanation_style: 'examples' | 'step_by_step' | 'conceptual';
+    feedback_preference: 'direct' | 'constructive' | 'encouraging';
+    learning_style: 'visual_and_text' | 'text_only' | 'interactive';
+  };
+  
+  // Context & Memory Preferences
+  context_preferences: {
+    remember_conversations: boolean;
+    use_context_from_previous: boolean;
+    personalization_level: 'low' | 'medium' | 'high';
+    adapt_to_patterns: boolean;
+  };
+  
+  // Content Preferences
+  content_preferences: {
+    topics_of_interest: string[];
+    expertise_areas: string[];
+    content_filters: string[];
+    preferred_examples: 'theoretical' | 'real_world' | 'mixed';
+  };
+  
+  // System Preferences
   theme: string;
   language: string;
   timezone?: string;
@@ -72,6 +122,15 @@ export interface UserPreferences {
     profile_visible: boolean;
     activity_visible: boolean;
   };
+  
+  // Accessibility
+  accessibility_prefs: {
+    font_size: 'small' | 'medium' | 'large';
+    high_contrast: boolean;
+    screen_reader_friendly: boolean;
+    reduced_motion: boolean;
+  };
+  
   created_at: Date;
   updated_at: Date;
 }
