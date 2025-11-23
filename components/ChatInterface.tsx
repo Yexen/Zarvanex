@@ -17,12 +17,12 @@ import { COHERE_MODELS } from '@/lib/cohere';
 import type { Conversation, Message, Model } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
-import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { UserPreferencesProvider, useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 import { extractionTrigger } from '@/lib/memory/extractionTrigger';
 import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization } from '@/lib/personalization';
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
 
-export default function ChatInterface() {
+function ChatInterfaceInner() {
   const router = useRouter();
 
   // Hooks
@@ -36,7 +36,7 @@ export default function ChatInterface() {
     deleteConversation,
     setMessages,
   } = useConversations(user?.id || null);
-  const { preferences } = useUserPreferences(user?.id || null);
+  const { preferences } = useUserPreferencesContext();
 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [models, setModels] = useState<Model[]>([]);
@@ -1276,5 +1276,15 @@ export default function ChatInterface() {
         />
       )}
     </div>
+  );
+}
+
+export default function ChatInterface() {
+  const { user } = useAuth();
+  
+  return (
+    <UserPreferencesProvider userId={user?.id || null}>
+      <ChatInterfaceInner />
+    </UserPreferencesProvider>
   );
 }

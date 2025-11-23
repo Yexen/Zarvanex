@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 
 interface AttachedFile {
   type: 'image' | 'document';
@@ -30,7 +30,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
   const documentInputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuth();
-  const { preferences, updatePreferences } = useUserPreferences(user?.id || null);
+  const { preferences, updatePreferences } = useUserPreferencesContext();
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
   const MAX_FILES = 10;
