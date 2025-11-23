@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import type { UserPreferences } from '@/types';
 
 interface SettingsExtendedProps {
   isOpen: boolean;
@@ -32,28 +33,28 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     
     // AI Interaction
     conversation_style: {
-      tone: 'balanced' as const,
-      formality: 'casual' as const,
-      verbosity: 'detailed' as const,
+      tone: 'balanced',
+      formality: 'casual',
+      verbosity: 'detailed',
       humor: true,
-      empathy_level: 'high' as const,
-      technical_depth: 'medium' as const,
+      empathy_level: 'high',
+      technical_depth: 'medium',
     },
     
     // Communication
     communication_prefs: {
       preferred_greeting: 'Hello',
-      response_length: 'detailed' as const,
-      explanation_style: 'examples' as const,
-      feedback_preference: 'constructive' as const,
-      learning_style: 'visual_and_text' as const,
+      response_length: 'detailed',
+      explanation_style: 'examples',
+      feedback_preference: 'constructive',
+      learning_style: 'visual_and_text',
     },
     
     // Context & Memory
     context_preferences: {
       remember_conversations: true,
       use_context_from_previous: true,
-      personalization_level: 'high' as const,
+      personalization_level: 'high',
       adapt_to_patterns: true,
     },
     
@@ -62,7 +63,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
       topics_of_interest: [] as string[],
       expertise_areas: [] as string[],
       content_filters: [] as string[],
-      preferred_examples: 'real_world' as const,
+      preferred_examples: 'real_world',
     },
     
     // System
@@ -78,7 +79,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     
     // Accessibility
     accessibility_prefs: {
-      font_size: 'medium' as const,
+      font_size: 'medium',
       high_contrast: false,
       screen_reader_friendly: false,
       reduced_motion: false,
@@ -125,7 +126,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     setSaveStatus(null);
 
     try {
-      await updatePreferences(formData);
+      await updatePreferences(formData as Partial<UserPreferences>);
       setSaveStatus('Settings saved successfully!');
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (error) {
