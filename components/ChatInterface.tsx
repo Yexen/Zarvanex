@@ -20,6 +20,7 @@ import { useConversations } from '@/hooks/useConversations';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { extractionTrigger } from '@/lib/memory/extractionTrigger';
 import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization } from '@/lib/personalization';
+import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
 
 export default function ChatInterface() {
   const router = useRouter();
@@ -705,23 +706,34 @@ export default function ChatInterface() {
       // Generate title after first exchange
       if (isFirstMessage) {
         try {
-          console.log('Generating context-based title...');
-          // Only use AI title generation for Ollama models (local)
-          // For API models, use simple fallback to avoid CORS/connectivity issues
+          console.log('Generating smart title...');
           let aiTitle: string;
-          if (provider === 'ollama') {
+          
+          if (shouldUseSmartTitles(provider)) {
+            // Use smart AI title generation for cloud models
+            aiTitle = await generateSmartTitle({
+              provider: provider as any,
+              modelId: selectedModel,
+              userMessage: firstUserMessage,
+              assistantMessage: response,
+              conversationContext: []
+            });
+          } else if (provider === 'ollama') {
+            // Use existing Ollama title generation
             aiTitle = await generateTitle(firstUserMessage, response, selectedModel);
           } else {
-            // Simple title generation: first 50 chars of user message
+            // Simple fallback for other cases
             aiTitle = firstUserMessage.slice(0, 50).trim();
             if (firstUserMessage.length > 50) aiTitle += '...';
           }
+          
           console.log('Generated title:', aiTitle);
           await updateConversation(conversationId, { title: aiTitle });
         } catch (titleError) {
           console.error('Error generating title:', titleError);
           // Fallback: use first 50 chars if title generation fails
-          await updateConversation(conversationId, { title: firstUserMessage.slice(0, 50) });
+          const fallbackTitle = firstUserMessage.slice(0, 50).trim() + (firstUserMessage.length > 50 ? '...' : '');
+          await updateConversation(conversationId, { title: fallbackTitle });
         }
       }
     } catch (error) {
