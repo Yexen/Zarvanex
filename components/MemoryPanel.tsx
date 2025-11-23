@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { MemoryView, MemoryPanelState } from '@/types/memory';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { memoryStorage } from '@/lib/memoryStorage';
+import FolderTree from './FolderTree';
+import MemoryEditor from './MemoryEditor';
+import type { MemoryView, MemoryPanelState, Memory, Folder, TreeNode } from '@/types/memory';
 
 export default function MemoryPanel() {
+  const { user } = useAuth();
   const [state, setState] = useState<MemoryPanelState>({
     currentView: 'browse',
     selectedMemoryId: null,
@@ -12,6 +17,261 @@ export default function MemoryPanel() {
     searchTags: [],
     isEditing: false
   });
+
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [treeNodes, setTreeNodes] = useState<TreeNode[]>([]);
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const [isCreatingMemory, setIsCreatingMemory] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<Memory[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Initialize storage and load data
+  useEffect(() => {
+    const initStorage = async () => {
+      try {
+        await memoryStorage.init();
+        await loadData();
+        
+        // Create default folders if none exist
+        const existingFolders = await memoryStorage.getAllFolders(user?.id);
+        if (existingFolders.length === 0 && user?.id) {
+          await memoryStorage.createDefaultFolders(user.id);
+          await loadData();
+        }
+      } catch (error) {
+        console.error('Error initializing storage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      initStorage();
+    }
+  }, [user?.id]);
+
+  const loadData = async () => {
+    if (!user?.id) return;
+
+    try {
+      const [memoriesData, foldersData] = await Promise.all([
+        memoryStorage.getAllMemories(user.id),
+        memoryStorage.getAllFolders(user.id)
+      ]);
+
+      setMemories(memoriesData);
+      setFolders(foldersData);
+      buildTreeNodes(memoriesData, foldersData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  const buildTreeNodes = (memoriesData: Memory[], foldersData: Folder[]) => {
+    const folderMap = new Map<string, TreeNode>();
+    const rootNodes: TreeNode[] = [];
+
+    // Create folder nodes
+    foldersData.forEach(folder => {
+      const node: TreeNode = {
+        id: folder.id,
+        type: 'folder',
+        name: folder.name,
+        children: [],
+        isExpanded: expandedFolders.has(folder.id),
+        level: 0,
+        data: folder
+      };
+      folderMap.set(folder.id, node);
+    });
+
+    // Build folder hierarchy
+    foldersData.forEach(folder => {
+      const node = folderMap.get(folder.id);
+      if (!node) return;
+
+      if (folder.parentId) {
+        const parent = folderMap.get(folder.parentId);
+        if (parent) {
+          node.level = parent.level + 1;
+          parent.children.push(node);
+        } else {
+          rootNodes.push(node);
+        }
+      } else {
+        rootNodes.push(node);
+      }
+    });
+
+    // Add memories to folders
+    memoriesData.forEach(memory => {
+      const memoryNode: TreeNode = {
+        id: memory.id,
+        type: 'memory',
+        name: memory.title,
+        children: [],
+        isExpanded: false,
+        level: 0,
+        data: memory
+      };
+
+      if (memory.folderId) {
+        const parentFolder = folderMap.get(memory.folderId);
+        if (parentFolder) {
+          memoryNode.level = parentFolder.level + 1;
+          parentFolder.children.push(memoryNode);
+        } else {
+          rootNodes.push(memoryNode);
+        }
+      } else {
+        rootNodes.push(memoryNode);
+      }
+    });
+
+    setTreeNodes(rootNodes);
+  };
+
+  const handleSelectNode = useCallback((nodeId: string, type: 'folder' | 'memory') => {
+    if (type === 'memory') {
+      const memory = memories.find(m => m.id === nodeId);
+      setSelectedMemory(memory || null);
+      setState(prev => ({ ...prev, selectedMemoryId: nodeId, selectedFolderId: null }));
+      setIsCreatingMemory(false);
+    } else {
+      setState(prev => ({ ...prev, selectedFolderId: nodeId, selectedMemoryId: null }));
+      setSelectedMemory(null);
+      setIsCreatingMemory(false);
+    }
+  }, [memories]);
+
+  const handleToggleFolder = useCallback((folderId: string) => {
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
+    
+    // Rebuild tree with new expansion state
+    buildTreeNodes(memories, folders);
+  }, [expandedFolders, memories, folders]);
+
+  const handleCreateFolder = useCallback(async (parentId?: string) => {
+    if (!user?.id) return;
+
+    const name = prompt('Enter folder name:');
+    if (!name?.trim()) return;
+
+    try {
+      await memoryStorage.saveFolder({
+        name: name.trim(),
+        parentId: parentId || null,
+        userId: user.id
+      });
+      await loadData();
+    } catch (error) {
+      console.error('Error creating folder:', error);
+    }
+  }, [user?.id]);
+
+  const handleCreateMemory = useCallback((folderId?: string) => {
+    setSelectedMemory(null);
+    setState(prev => ({ 
+      ...prev, 
+      selectedMemoryId: null, 
+      selectedFolderId: folderId || null 
+    }));
+    setIsCreatingMemory(true);
+  }, []);
+
+  const handleSaveMemory = useCallback(async (memoryData: Partial<Memory>) => {
+    if (!user?.id) return;
+
+    try {
+      if (selectedMemory) {
+        // Update existing memory
+        await memoryStorage.updateMemory(selectedMemory.id, memoryData);
+      } else {
+        // Create new memory
+        await memoryStorage.saveMemory({
+          ...memoryData,
+          userId: user.id,
+          folderId: memoryData.folderId || state.selectedFolderId
+        } as Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>);
+      }
+      await loadData();
+    } catch (error) {
+      console.error('Error saving memory:', error);
+    }
+  }, [selectedMemory, user?.id, state.selectedFolderId]);
+
+  const handleDeleteMemory = useCallback(async () => {
+    if (!selectedMemory) return;
+
+    try {
+      await memoryStorage.deleteMemory(selectedMemory.id);
+      setSelectedMemory(null);
+      setState(prev => ({ ...prev, selectedMemoryId: null }));
+      setIsCreatingMemory(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+    }
+  }, [selectedMemory]);
+
+  const handleDeleteNode = useCallback(async (nodeId: string, type: 'folder' | 'memory') => {
+    const confirmMessage = type === 'folder' 
+      ? 'Delete this folder? Memories inside will be moved to root.'
+      : 'Delete this memory? This action cannot be undone.';
+      
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      if (type === 'folder') {
+        await memoryStorage.deleteFolder(nodeId);
+      } else {
+        await memoryStorage.deleteMemory(nodeId);
+      }
+      
+      // Clear selection if we deleted the selected item
+      if (state.selectedFolderId === nodeId || state.selectedMemoryId === nodeId) {
+        setState(prev => ({ 
+          ...prev, 
+          selectedFolderId: null, 
+          selectedMemoryId: null 
+        }));
+        setSelectedMemory(null);
+      }
+      
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting node:', error);
+    }
+  }, [state.selectedFolderId, state.selectedMemoryId]);
+
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const results = await memoryStorage.searchMemories(query, state.searchTags);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching memories:', error);
+    }
+  }, [state.searchTags]);
+
+  // Search when query changes
+  useEffect(() => {
+    if (state.currentView === 'search') {
+      handleSearch(state.searchQuery);
+    }
+  }, [state.searchQuery, state.currentView, handleSearch]);
 
   const tabs = [
     {
@@ -43,6 +303,21 @@ export default function MemoryPanel() {
       )
     }
   ];
+
+  if (loading) {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-primary)',
+        color: 'var(--gray-light)'
+      }}>
+        Initializing Hard Memory...
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
@@ -76,11 +351,33 @@ export default function MemoryPanel() {
             </h1>
           </div>
           <div style={{ color: 'var(--gray-dark)', fontSize: '14px' }}>
-            Your persistent knowledge base
+            {memories.length} memories • {folders.length} folders
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => handleCreateMemory()}
+            style={{
+              padding: '8px 16px',
+              background: 'var(--teal-bright)',
+              color: '#000',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Memory
+          </button>
+
           <button
             onClick={() => window.location.href = '/'}
             style={{
@@ -95,14 +392,6 @@ export default function MemoryPanel() {
               alignItems: 'center',
               gap: '8px',
               transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-              e.currentTarget.style.color = 'var(--gray-light)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.color = 'var(--gray-med)';
             }}
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,18 +426,6 @@ export default function MemoryPanel() {
               fontWeight: '500',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => {
-              if (state.currentView !== tab.id) {
-                e.currentTarget.style.color = 'var(--gray-light)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (state.currentView !== tab.id) {
-                e.currentTarget.style.color = 'var(--gray-med)';
-                e.currentTarget.style.background = 'transparent';
-              }
-            }}
           >
             {tab.icon}
             {tab.name}
@@ -168,7 +445,7 @@ export default function MemoryPanel() {
           }}>
             {/* Sidebar - Folder Tree */}
             <div style={{
-              width: '320px',
+              width: '350px',
               borderRight: '1px solid rgba(255, 255, 255, 0.1)',
               background: 'var(--darker-bg)',
               display: 'flex',
@@ -188,9 +465,10 @@ export default function MemoryPanel() {
                   color: 'var(--gray-light)',
                   margin: 0
                 }}>
-                  Folders
+                  Memory Tree
                 </h3>
                 <button
+                  onClick={() => handleCreateFolder()}
                   style={{
                     padding: '6px 12px',
                     background: 'var(--teal-bright)',
@@ -208,80 +486,38 @@ export default function MemoryPanel() {
                   <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  New
+                  Folder
                 </button>
               </div>
 
-              {/* Folder Tree Content */}
-              <div style={{ 
-                flex: 1, 
-                padding: '16px', 
-                overflow: 'auto' 
-              }}>
-                <div style={{ 
-                  color: 'var(--gray-med)', 
-                  fontSize: '14px', 
-                  fontStyle: 'italic' 
-                }}>
-                  No memories yet. Create your first memory to get started.
-                </div>
+              {/* Folder Tree */}
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <FolderTree
+                  nodes={treeNodes}
+                  onSelectNode={handleSelectNode}
+                  onToggleFolder={handleToggleFolder}
+                  onCreateFolder={handleCreateFolder}
+                  onCreateMemory={handleCreateMemory}
+                  onDeleteNode={handleDeleteNode}
+                  selectedNodeId={state.selectedMemoryId || state.selectedFolderId || undefined}
+                />
               </div>
             </div>
 
             {/* Main Content */}
-            <div style={{ 
-              flex: 1, 
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '40px'
-            }}>
-              <div style={{ 
-                textAlign: 'center', 
-                maxWidth: '400px',
-                color: 'var(--gray-med)'
-              }}>
-                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginBottom: '24px', opacity: 0.5 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <h3 style={{ 
-                  fontSize: '20px', 
-                  fontWeight: '600', 
-                  color: 'var(--gray-light)',
-                  marginBottom: '12px' 
-                }}>
-                  Welcome to Hard Memory
-                </h3>
-                <p style={{ 
-                  fontSize: '16px', 
-                  lineHeight: '1.5', 
-                  marginBottom: '24px' 
-                }}>
-                  Create and organize persistent memories that will enhance all your conversations with Zarvânex.
-                </p>
-                <button
-                  style={{
-                    padding: '12px 24px',
-                    background: 'var(--teal-bright)',
-                    color: '#000',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    margin: '0 auto'
-                  }}
-                >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Create First Memory
-                </button>
-              </div>
+            <div style={{ flex: 1, display: 'flex', position: 'relative' }}>
+              <MemoryEditor
+                memory={selectedMemory}
+                folders={folders}
+                onSave={handleSaveMemory}
+                onDelete={selectedMemory ? handleDeleteMemory : undefined}
+                onClose={() => {
+                  setSelectedMemory(null);
+                  setIsCreatingMemory(false);
+                  setState(prev => ({ ...prev, selectedMemoryId: null }));
+                }}
+                isCreating={isCreatingMemory}
+              />
             </div>
           </div>
         )}
@@ -293,25 +529,20 @@ export default function MemoryPanel() {
             padding: '24px',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center'
+            gap: '24px'
           }}>
-            <div style={{ 
-              maxWidth: '600px', 
-              width: '100%',
-              textAlign: 'center'
-            }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
               <h3 style={{ 
                 fontSize: '24px', 
                 fontWeight: '600', 
                 color: 'var(--gray-light)',
-                marginBottom: '16px' 
+                marginBottom: '16px',
+                textAlign: 'center' 
               }}>
                 Search Memories
               </h3>
-              <div style={{
-                position: 'relative',
-                marginBottom: '24px'
-              }}>
+              
+              <div style={{ position: 'relative', marginBottom: '24px' }}>
                 <input
                   type="text"
                   placeholder="Search titles, content, and tags..."
@@ -339,12 +570,77 @@ export default function MemoryPanel() {
                   </svg>
                 </div>
               </div>
-              <div style={{ 
-                color: 'var(--gray-med)', 
-                fontSize: '14px' 
-              }}>
-                Start typing to search through your memories...
-              </div>
+
+              {/* Search Results */}
+              {state.searchQuery.trim() && (
+                <div>
+                  <p style={{ color: 'var(--gray-med)', marginBottom: '16px' }}>
+                    Found {searchResults.length} results for "{state.searchQuery}"
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {searchResults.map(memory => (
+                      <div
+                        key={memory.id}
+                        onClick={() => handleSelectNode(memory.id, 'memory')}
+                        style={{
+                          padding: '16px',
+                          background: 'var(--darker-bg)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <h4 style={{ 
+                          color: 'var(--gray-light)', 
+                          fontSize: '16px', 
+                          fontWeight: '600',
+                          marginBottom: '8px' 
+                        }}>
+                          {memory.title}
+                        </h4>
+                        <p style={{ 
+                          color: 'var(--gray-med)', 
+                          fontSize: '14px',
+                          lineHeight: '1.4',
+                          marginBottom: '8px' 
+                        }}>
+                          {memory.content.slice(0, 150)}{memory.content.length > 150 ? '...' : ''}
+                        </p>
+                        {memory.tags.length > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {memory.tags.map(tag => (
+                              <span
+                                key={tag}
+                                style={{
+                                  background: 'var(--teal-dark)',
+                                  color: 'white',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '11px'
+                                }}
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!state.searchQuery.trim() && (
+                <div style={{ 
+                  textAlign: 'center',
+                  color: 'var(--gray-med)', 
+                  fontSize: '14px' 
+                }}>
+                  Start typing to search through your memories...
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -355,13 +651,9 @@ export default function MemoryPanel() {
             width: '100%', 
             padding: '24px',
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
+            flexDirection: 'column'
           }}>
-            <div style={{ 
-              maxWidth: '800px', 
-              width: '100%'
-            }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
               <h3 style={{ 
                 fontSize: '24px', 
                 fontWeight: '600', 
@@ -371,13 +663,88 @@ export default function MemoryPanel() {
               }}>
                 Memory Timeline
               </h3>
-              <div style={{ 
-                color: 'var(--gray-med)', 
-                fontSize: '14px',
-                textAlign: 'center'
-              }}>
-                Your memories will appear here in chronological order...
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {memories
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map(memory => (
+                    <div
+                      key={memory.id}
+                      onClick={() => handleSelectNode(memory.id, 'memory')}
+                      style={{
+                        padding: '16px',
+                        background: 'var(--darker-bg)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                        <h4 style={{ 
+                          color: 'var(--gray-light)', 
+                          fontSize: '16px', 
+                          fontWeight: '600',
+                          margin: 0
+                        }}>
+                          {memory.title}
+                        </h4>
+                        <span style={{ 
+                          color: 'var(--gray-dark)', 
+                          fontSize: '12px',
+                          whiteSpace: 'nowrap',
+                          marginLeft: '16px'
+                        }}>
+                          {new Date(memory.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      
+                      <p style={{ 
+                        color: 'var(--gray-med)', 
+                        fontSize: '14px',
+                        lineHeight: '1.4',
+                        marginBottom: memory.tags.length > 0 ? '8px' : 0,
+                        margin: 0
+                      }}>
+                        {memory.content.slice(0, 120)}{memory.content.length > 120 ? '...' : ''}
+                      </p>
+                      
+                      {memory.tags.length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                          {memory.tags.slice(0, 3).map(tag => (
+                            <span
+                              key={tag}
+                              style={{
+                                background: 'var(--teal-dark)',
+                                color: 'white',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px'
+                              }}
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                          {memory.tags.length > 3 && (
+                            <span style={{ color: 'var(--gray-dark)', fontSize: '11px' }}>
+                              +{memory.tags.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
+
+              {memories.length === 0 && (
+                <div style={{ 
+                  textAlign: 'center',
+                  color: 'var(--gray-med)', 
+                  fontSize: '14px' 
+                }}>
+                  No memories yet. Create your first one!
+                </div>
+              )}
             </div>
           </div>
         )}
