@@ -1096,10 +1096,6 @@ function ChatInterfaceInner() {
         onRenameConversation={async (id, newTitle) => {
           await updateConversation(id, { title: newTitle });
         }}
-        onNavigateToMap={() => {
-          router.push('/gotham-map');
-          setIsMobileMenuOpen(false);
-        }}
         className={isMobileMenuOpen ? 'mobile-open' : ''}
       />
 

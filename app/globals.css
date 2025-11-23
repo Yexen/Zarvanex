@@ -1438,18 +1438,6 @@ body {
 /* Chat item actions - show on hover */
 .chat-item:hover .chat-item-actions {
   opacity: 1 !important;
-  pointerEvents: auto !important;
-}
-
-/* Make chat items position relative for absolute positioning of actions */
-.chat-item {
-  position: relative;
-  transition: transform 0.2s ease;
-}
-
-/* Create space above the hovered conversation for action buttons */
-.chat-item:hover {
-  transform: translateY(44px) !important;
 }
 
 .chat-item-actions button:hover {

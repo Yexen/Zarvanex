@@ -15,7 +15,6 @@ interface SidebarProps {
   onSelectConversation: (id: string) => void;
   onDeleteConversation?: (id: string) => void;
   onRenameConversation?: (id: string, newTitle: string) => void;
-  onNavigateToMap?: () => void;
   className?: string;
 }
 
@@ -26,7 +25,6 @@ export default function Sidebar({
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
-  onNavigateToMap,
   className = '',
 }: SidebarProps) {
   const { user, signOut } = useAuth();
@@ -129,16 +127,6 @@ export default function Sidebar({
             Search chats
           </button>
 
-          <button
-            className="search-chat-btn"
-            onClick={onNavigateToMap}
-            style={{ marginTop: '8px' }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            Gotham Map
-          </button>
 
           {selectedChats.size > 0 && (
             <button
@@ -214,29 +202,13 @@ export default function Sidebar({
                     />
                   ) : (
                     <>
-                      {/* Action buttons - positioned on top of conversation frame */}
-                      <div 
-                        style={{ 
-                          position: 'absolute',
-                          top: '-40px',
-                          left: '0px',
-                          right: '0px',
-                          display: 'flex', 
-                          justifyContent: 'center',
-                          gap: '4px', 
-                          opacity: 0, 
-                          transition: 'opacity 0.2s',
-                          alignItems: 'center',
-                          background: 'var(--darker-bg)',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          zIndex: 100,
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                          pointerEvents: 'none'
-                        }} 
-                        className="chat-item-actions"
+                      <div
+                        onClick={() => onSelectConversation(conv.id)}
+                        style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
                       >
+                        {conv.title}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', opacity: 0, transition: 'opacity 0.2s', alignItems: 'center' }} className="chat-item-actions">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -253,15 +225,14 @@ export default function Sidebar({
                             borderRadius: '2px',
                             border: '1.5px solid var(--gray-light)',
                             background: selectedChats.has(conv.id) ? 'var(--purple)' : 'transparent',
-                            width: '12px',
-                            height: '12px',
-                            minWidth: '12px',
-                            minHeight: '12px',
+                            width: '14px',
+                            height: '14px',
+                            minWidth: '14px',
+                            minHeight: '14px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            pointerEvents: 'auto'
                           }}
                           title="Select for deletion"
                         >
@@ -286,7 +257,6 @@ export default function Sidebar({
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            pointerEvents: 'auto'
                           }}
                           title="Rename"
                         >
@@ -308,7 +278,6 @@ export default function Sidebar({
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            pointerEvents: 'auto'
                           }}
                           title="Delete"
                         >
@@ -330,7 +299,6 @@ export default function Sidebar({
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            pointerEvents: 'auto'
                           }}
                           title="Information"
                         >
@@ -352,7 +320,6 @@ export default function Sidebar({
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            pointerEvents: 'auto'
                           }}
                           title="Analyze Conversation"
                         >
@@ -360,20 +327,6 @@ export default function Sidebar({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
                         </button>
-                      </div>
-                      
-                      {/* Title - now takes full width */}
-                      <div
-                        onClick={() => onSelectConversation(conv.id)}
-                        style={{ 
-                          width: '100%',
-                          overflow: 'hidden', 
-                          textOverflow: 'ellipsis', 
-                          whiteSpace: 'nowrap',
-                          paddingRight: '8px'
-                        }}
-                      >
-                        {conv.title}
                       </div>
                     </>
                   )}
@@ -468,27 +421,6 @@ export default function Sidebar({
               </svg>
             </button>
 
-            <button
-              onClick={onNavigateToMap}
-              style={{
-                padding: '8px',
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '6px',
-                color: 'var(--gray-med)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '32px',
-                height: '32px',
-              }}
-              title="Gotham Map"
-            >
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </button>
           </div>
 
           {/* Spacer to push buttons to bottom */}
