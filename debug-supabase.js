@@ -17,12 +17,12 @@ async function testConnection() {
     const { data, error } = await supabase.from('conversations').select('count');
     
     if (error) {
-      console.error('❌ Database error:', error);
+      console.error('[ERROR] Database error:', error);
       return;
     }
     
-    console.log('✅ Database connection successful');
-    console.log('📊 Table structure check...');
+    console.log('[SUCCESS] Database connection successful');
+    console.log('[DEBUG] Table structure check...');
     
     // Check table structure
     const { data: tableInfo, error: tableError } = await supabase
@@ -31,13 +31,13 @@ async function testConnection() {
       .limit(1);
       
     if (tableError) {
-      console.error('❌ Table structure error:', tableError);
+      console.error('[ERROR] Table structure error:', tableError);
     } else {
-      console.log('✅ Table exists and accessible');
+      console.log('[SUCCESS] Table exists and accessible');
     }
     
   } catch (err) {
-    console.error('❌ Connection failed:', err);
+    console.error('[ERROR] Connection failed:', err);
   }
 }
 

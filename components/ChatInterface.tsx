@@ -222,7 +222,7 @@ function ChatInterfaceInner() {
   // Helper function to send message to Groq API with streaming
   const sendGroqMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    console.log('🎯 sendGroqMessage: Generating system prompt', { 
+    console.log('[DEBUG] sendGroqMessage: Generating system prompt', { 
       hasPreferences: !!preferences, 
       shouldInclude: shouldIncludePersonalization(preferences),
       preferencesNickname: preferences?.nickname 
@@ -316,7 +316,7 @@ function ChatInterfaceInner() {
   // Helper function to send message to OpenRouter API with streaming
   const sendOpenRouterMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    console.log('🎯 sendOpenRouterMessage: Generating system prompt', { 
+    console.log('[DEBUG] sendOpenRouterMessage: Generating system prompt', { 
       hasPreferences: !!preferences, 
       shouldInclude: shouldIncludePersonalization(preferences),
       preferencesNickname: preferences?.nickname 
@@ -727,7 +727,7 @@ function ChatInterfaceInner() {
       console.log(`Message size: ${messageSizeMB.toFixed(2)}MB`);
 
       if (messageSizeMB > 0.9) {
-        console.log('⚠️ Images too large for Supabase, saving text only');
+        console.log('[WARNING] Images too large for Supabase, saving text only');
         imagesToSave = undefined; // Don't save images to database
         // Images will still be sent to the model, just not saved in history
       }

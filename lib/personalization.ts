@@ -2,11 +2,11 @@ import type { UserPreferences } from '@/types';
 
 export function generateSystemPrompt(preferences: UserPreferences | null): string {
   if (!preferences) {
-    console.log('🔄 No preferences found, using default system prompt');
+    console.log('[DEBUG] No preferences found, using default system prompt');
     return "You are Zarvânex, a helpful AI assistant. Be friendly, informative, and engaging in your responses.";
   }
 
-  console.log('🎯 Generating system prompt with preferences:', {
+  console.log('[DEBUG] Generating system prompt with preferences:', {
     hasNickname: !!preferences.nickname,
     hasBackground: !!preferences.background,
     hasInterests: !!preferences.interests?.length,
@@ -235,7 +235,7 @@ export function generateSystemPrompt(preferences: UserPreferences | null): strin
   parts.push("\nRemember to be helpful, accurate, and engaging while following these personalization guidelines.");
 
   const finalPrompt = parts.join(' ');
-  console.log('📝 Generated system prompt:', finalPrompt);
+  console.log('[DEBUG] Generated system prompt:', finalPrompt);
   console.log('📏 System prompt length:', finalPrompt.length, 'characters');
 
   return finalPrompt;

@@ -117,7 +117,7 @@ export async function sendMessage(
   });
 
   if (payloadSize > 10 * 1024 * 1024) {
-    console.warn(`⚠️ Large payload detected (${payloadMB} MB) - this might cause issues with Ollama!`);
+    console.warn(`[WARNING] Large payload detected (${payloadMB} MB) - this might cause issues with Ollama!`);
   }
 
   const response = await fetch(`${OLLAMA_API}/v1/chat/completions`, {

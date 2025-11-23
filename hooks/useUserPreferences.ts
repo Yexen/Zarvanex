@@ -70,7 +70,7 @@ export function useUserPreferences(userId: string | null) {
   const loadPreferences = async () => {
     if (!userId) return;
 
-    console.log('📥 Loading preferences for user:', userId);
+    console.log('[DEBUG] Loading preferences for user:', userId);
 
     try {
       setLoading(true);
@@ -80,14 +80,14 @@ export function useUserPreferences(userId: string | null) {
         .eq('user_id', userId)
         .single();
 
-      console.log('📊 Load result:', { data, error, errorCode: error?.code });
+      console.log('[DEBUG] Load result:', { data, error, errorCode: error?.code });
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         throw error;
       }
 
       if (data) {
-        console.log('✅ Found existing preferences');
+        console.log('[DEBUG] Found existing preferences');
         setPreferences({
           ...data,
           created_at: new Date(data.created_at),
@@ -99,7 +99,7 @@ export function useUserPreferences(userId: string | null) {
         await createDefaultPreferences();
       }
     } catch (err) {
-      console.error('❌ Error loading user preferences:', err);
+      console.error('[ERROR] Error loading user preferences:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export function useUserPreferences(userId: string | null) {
   const createDefaultPreferences = async () => {
     if (!userId) return;
 
-    console.log('🏗️ Creating default preferences for user:', userId);
+    console.log('[DEBUG] Creating default preferences for user:', userId);
 
     try {
       const { data, error } = await supabase
@@ -121,18 +121,18 @@ export function useUserPreferences(userId: string | null) {
         .select()
         .single();
 
-      console.log('🏗️ Create result:', { data, error });
+      console.log('[DEBUG] Create result:', { data, error });
 
       if (error) throw error;
 
-      console.log('✅ Created default preferences successfully');
+      console.log('[DEBUG] Created default preferences successfully');
       setPreferences({
         ...data,
         created_at: new Date(data.created_at),
         updated_at: new Date(data.updated_at),
       });
     } catch (err) {
-      console.error('❌ Error creating default preferences:', err);
+      console.error('[ERROR] Error creating default preferences:', err);
       setError(err as Error);
     }
   };
@@ -140,7 +140,7 @@ export function useUserPreferences(userId: string | null) {
   const updatePreferences = async (updates: Partial<UserPreferences>): Promise<void> => {
     if (!userId || !preferences) return;
 
-    console.log('🔄 Updating preferences:', { userId, updates });
+    console.log('[DEBUG] Updating preferences:', { userId, updates });
 
     try {
       // Optimistic update
@@ -152,14 +152,14 @@ export function useUserPreferences(userId: string | null) {
         .eq('user_id', userId)
         .select();
 
-      console.log('📝 Update result:', { data, error });
+      console.log('[DEBUG] Update result:', { data, error });
 
       if (error) throw error;
 
       // Reload to get the updated timestamp
       await loadPreferences();
     } catch (err) {
-      console.error('❌ Error updating preferences:', err);
+      console.error('[ERROR] Error updating preferences:', err);
       // Revert optimistic update
       await loadPreferences();
       throw err;

@@ -81,9 +81,9 @@ export default function UserProfile({
       // Update user preferences
       await updatePreferences({ avatar_url: publicUrl });
 
-      console.log('✅ Avatar uploaded successfully:', publicUrl);
+      console.log('[DEBUG] Avatar uploaded successfully:', publicUrl);
     } catch (error) {
-      console.error('❌ Error uploading avatar:', error);
+      console.error('[ERROR] Error uploading avatar:', error);
       alert('Failed to upload photo. Please try again.');
     } finally {
       setIsUploading(false);

@@ -196,9 +196,9 @@ ${conversationText}`;
           background: 'var(--darker-bg)'
         }}>
           {[
-            { id: 'overview', label: '📊 Overview', icon: '📊' },
-            { id: 'visual', label: '📈 Visual Analysis', icon: '📈' },
-            { id: 'text', label: '📝 Text Analysis', icon: '📝' }
+            { id: 'overview', label: 'Overview', icon: 'overview' },
+            { id: 'visual', label: 'Visual Analysis', icon: 'visual' },
+            { id: 'text', label: 'Text Analysis', icon: 'text' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -214,9 +214,28 @@ ${conversationText}`;
                 fontWeight: 500,
                 transition: 'all 0.2s ease',
                 flex: 1,
-                textAlign: 'center'
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}
             >
+              {tab.icon === 'overview' && (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              )}
+              {tab.icon === 'visual' && (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+              )}
+              {tab.icon === 'text' && (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              )}
               {tab.label}
             </button>
           ))}
@@ -344,7 +363,10 @@ ${conversationText}`;
                       transition: 'all 0.2s'
                     }}
                   >
-                    📈 See Charts
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    See Charts
                   </button>
                   <button
                     onClick={() => setActiveView('text')}
@@ -360,7 +382,10 @@ ${conversationText}`;
                       transition: 'all 0.2s'
                     }}
                   >
-                    📝 Start Analysis
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Start Analysis
                   </button>
                 </div>
               </div>

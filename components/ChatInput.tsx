@@ -41,7 +41,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
     if (!personalizationMatch) return false;
 
     const input = personalizationMatch[1].trim();
-    console.log('🎯 Personalization command detected:', input);
+    console.log('[DEBUG] Personalization command detected:', input);
 
     try {
       // Simple parsing: split by commas and try to categorize
@@ -99,7 +99,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
         background: background || undefined,
       });
 
-      console.log('✅ Personalization updated:', { conversationStyle, interests, background });
+      console.log('[DEBUG] Personalization updated:', { conversationStyle, interests, background });
       
       // Clear the command from input
       setMessage('');
@@ -112,8 +112,8 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
 
       return true;
     } catch (error) {
-      console.error('❌ Error parsing personalization command:', error);
-      setMessage('❌ Error updating personalization. Please try again.');
+      console.error('[ERROR] Error parsing personalization command:', error);
+      setMessage('[ERROR] Error updating personalization. Please try again.');
       setTimeout(() => setMessage(''), 3000);
       return true; // Still consumed the command
     }
@@ -156,7 +156,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
       };
 
       script.onerror = (error) => {
-        console.error('[PDF.js] ❌ Failed to load PDF.js script:', error);
+        console.error('[PDF.js] [ERROR] Failed to load PDF.js script:', error);
         setFileError('PDF processing library failed to load. Please check your internet connection.');
       };
 
@@ -437,7 +437,12 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
               color: '#3b82f6',
               fontSize: '12px',
             }}>
-              📄 PDF converted to images for vision analysis (≤30 pages)
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                PDF converted to images for vision analysis (≤30 pages)
+              </div>
             </div>
           )}
 
@@ -452,7 +457,12 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
               color: '#22c55e',
               fontSize: '12px',
             }}>
-              📝 Text extracted from large PDF ({'>'}30 pages) - will be included with your message
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Text extracted from large PDF ({'>'}30 pages) - will be included with your message
+              </div>
             </div>
           )}
 
