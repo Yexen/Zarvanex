@@ -20,6 +20,7 @@ import { useConversations } from '@/hooks/useConversations';
 import { UserPreferencesProvider, useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 import { extractionTrigger } from '@/lib/memory/extractionTrigger';
 import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization } from '@/lib/personalization';
+import { getConversationMemory, formatMemoryForPrompt } from '@/lib/memory';
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
 
 function ChatInterfaceInner() {
@@ -226,9 +227,24 @@ function ChatInterfaceInner() {
       shouldInclude: shouldIncludePersonalization(preferences),
       preferencesNickname: preferences?.nickname 
     });
-    const systemPrompt = shouldIncludePersonalization(preferences) 
+    
+    let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : undefined;
+      : "You are Zarvânex, a helpful AI assistant.";
+
+    // Add conversation memory context if user is available
+    if (user?.id && messages.length > 0) {
+      const currentQuery = messages[messages.length - 1]?.content || '';
+      try {
+        const memoryContext = await getConversationMemory(user.id, currentQuery);
+        const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching memory context:', error);
+      }
+    }
 
     console.log('Sending to Groq with personalization:', {
       hasPreferences: !!preferences,
@@ -305,9 +321,24 @@ function ChatInterfaceInner() {
       shouldInclude: shouldIncludePersonalization(preferences),
       preferencesNickname: preferences?.nickname 
     });
-    const systemPrompt = shouldIncludePersonalization(preferences) 
+    
+    let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : undefined;
+      : "You are Zarvânex, a helpful AI assistant.";
+
+    // Add conversation memory context if user is available
+    if (user?.id && messages.length > 0) {
+      const currentQuery = messages[messages.length - 1]?.content || '';
+      try {
+        const memoryContext = await getConversationMemory(user.id, currentQuery);
+        const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching memory context:', error);
+      }
+    }
 
     console.log('Sending to OpenRouter with personalization:', {
       hasPreferences: !!preferences,
@@ -379,9 +410,23 @@ function ChatInterfaceInner() {
   // Helper function to send message to OpenAI API with streaming
   const sendOpenAIMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    const systemPrompt = shouldIncludePersonalization(preferences) 
+    let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : undefined;
+      : "You are Zarvânex, a helpful AI assistant.";
+
+    // Add conversation memory context if user is available
+    if (user?.id && messages.length > 0) {
+      const currentQuery = messages[messages.length - 1]?.content || '';
+      try {
+        const memoryContext = await getConversationMemory(user.id, currentQuery);
+        const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching memory context:', error);
+      }
+    }
 
     console.log('Sending to OpenAI with personalization:', {
       hasPreferences: !!preferences,
@@ -453,9 +498,23 @@ function ChatInterfaceInner() {
   // Helper function to send message to Claude API with streaming
   const sendClaudeMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    const systemPrompt = shouldIncludePersonalization(preferences) 
+    let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : undefined;
+      : "You are Zarvânex, a helpful AI assistant.";
+
+    // Add conversation memory context if user is available
+    if (user?.id && messages.length > 0) {
+      const currentQuery = messages[messages.length - 1]?.content || '';
+      try {
+        const memoryContext = await getConversationMemory(user.id, currentQuery);
+        const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching memory context:', error);
+      }
+    }
 
     console.log('Sending to Claude with personalization:', {
       hasPreferences: !!preferences,
@@ -527,9 +586,23 @@ function ChatInterfaceInner() {
   // Helper function to send message to Cohere API with streaming
   const sendCohereMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    const systemPrompt = shouldIncludePersonalization(preferences) 
+    let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : undefined;
+      : "You are Zarvânex, a helpful AI assistant.";
+
+    // Add conversation memory context if user is available
+    if (user?.id && messages.length > 0) {
+      const currentQuery = messages[messages.length - 1]?.content || '';
+      try {
+        const memoryContext = await getConversationMemory(user.id, currentQuery);
+        const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching memory context:', error);
+      }
+    }
 
     console.log('Sending to Cohere with personalization:', {
       hasPreferences: !!preferences,
