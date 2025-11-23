@@ -21,6 +21,7 @@ import { UserPreferencesProvider, useUserPreferencesContext } from '@/contexts/U
 import { extractionTrigger } from '@/lib/memory/extractionTrigger';
 import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization } from '@/lib/personalization';
 import { getConversationMemory, formatMemoryForPrompt } from '@/lib/memory';
+import { getHardMemoryContext, formatHardMemoryForPrompt } from '@/lib/hardMemoryAI';
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
 
 function ChatInterfaceInner() {
@@ -236,10 +237,18 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
+        }
+        
+        // Add hard memory context
+        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+        if (hardMemoryPrompt) {
+          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
@@ -330,10 +339,18 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
+        }
+        
+        // Add hard memory context
+        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+        if (hardMemoryPrompt) {
+          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
@@ -418,10 +435,18 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
+        }
+        
+        // Add hard memory context
+        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+        if (hardMemoryPrompt) {
+          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
@@ -506,10 +531,18 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
+        }
+        
+        // Add hard memory context
+        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+        if (hardMemoryPrompt) {
+          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
@@ -594,10 +627,18 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
+        }
+        
+        // Add hard memory context
+        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+        if (hardMemoryPrompt) {
+          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
