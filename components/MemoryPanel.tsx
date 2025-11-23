@@ -575,7 +575,7 @@ export default function MemoryPanel() {
               {state.searchQuery.trim() && (
                 <div>
                   <p style={{ color: 'var(--gray-med)', marginBottom: '16px' }}>
-                    Found {searchResults.length} results for "{state.searchQuery}"
+                    Found {searchResults.length} results for &quot;{state.searchQuery}&quot;
                   </p>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

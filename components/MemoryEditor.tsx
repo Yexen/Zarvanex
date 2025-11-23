@@ -453,7 +453,7 @@ export default function MemoryEditor({
               marginBottom: '20px',
               lineHeight: '1.5' 
             }}>
-              Are you sure you want to delete "{title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{title}&quot;? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
