@@ -517,6 +517,7 @@ export default function MemoryPanel() {
                   setState(prev => ({ ...prev, selectedMemoryId: null }));
                 }}
                 isCreating={isCreatingMemory}
+                defaultFolderId={state.selectedFolderId}
               />
             </div>
           </div>

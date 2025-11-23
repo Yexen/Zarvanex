@@ -10,6 +10,7 @@ interface MemoryEditorProps {
   onDelete?: () => Promise<void>;
   onClose: () => void;
   isCreating?: boolean;
+  defaultFolderId?: string | null;
 }
 
 export default function MemoryEditor({
@@ -18,7 +19,8 @@ export default function MemoryEditor({
   onSave,
   onDelete,
   onClose,
-  isCreating = false
+  isCreating = false,
+  defaultFolderId = null
 }: MemoryEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -40,11 +42,11 @@ export default function MemoryEditor({
       setTitle('');
       setContent('');
       setTags([]);
-      setFolderId(null);
+      setFolderId(defaultFolderId);
       // Focus title input for new memories
       setTimeout(() => titleRef.current?.focus(), 100);
     }
-  }, [memory, isCreating]);
+  }, [memory, isCreating, defaultFolderId]);
 
   const handleSave = async () => {
     if (!title.trim()) {
