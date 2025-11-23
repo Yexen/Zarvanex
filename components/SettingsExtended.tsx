@@ -729,8 +729,858 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
                   </div>
                 )}
 
-                {/* Continue with other tabs... */}
-                {/* For brevity, I'll add the core tabs. The pattern continues for ai_style, communication, content, system, and accessibility */}
+                {/* AI Style Tab */}
+                {activeTab === 'ai_style' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '20px', marginBottom: '24px', fontWeight: '600' }}>
+                      AI Interaction Style
+                    </h4>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Conversation Tone
+                        </label>
+                        <select
+                          value={formData.conversation_style.tone}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conversation_style: {
+                              ...prev.conversation_style,
+                              tone: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="professional">Professional</option>
+                          <option value="casual">Casual</option>
+                          <option value="friendly">Friendly</option>
+                          <option value="balanced">Balanced</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Formality Level
+                        </label>
+                        <select
+                          value={formData.conversation_style.formality}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conversation_style: {
+                              ...prev.conversation_style,
+                              formality: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="formal">Formal</option>
+                          <option value="casual">Casual</option>
+                          <option value="adaptive">Adaptive</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Response Length
+                        </label>
+                        <select
+                          value={formData.conversation_style.verbosity}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conversation_style: {
+                              ...prev.conversation_style,
+                              verbosity: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="concise">Concise</option>
+                          <option value="detailed">Detailed</option>
+                          <option value="comprehensive">Comprehensive</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Technical Depth
+                        </label>
+                        <select
+                          value={formData.conversation_style.technical_depth}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conversation_style: {
+                              ...prev.conversation_style,
+                              technical_depth: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="basic">Basic</option>
+                          <option value="medium">Medium</option>
+                          <option value="advanced">Advanced</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Empathy Level
+                        </label>
+                        <select
+                          value={formData.conversation_style.empathy_level}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conversation_style: {
+                              ...prev.conversation_style,
+                              empathy_level: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.conversation_style.humor}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conversation_style: {
+                                ...prev.conversation_style,
+                                humor: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Use Humor & Wit
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Allow the AI to use appropriate humor and casual expressions
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Communication Tab */}
+                {activeTab === 'communication' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '20px', marginBottom: '24px', fontWeight: '600' }}>
+                      Communication Preferences
+                    </h4>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Preferred Greeting
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.communication_prefs.preferred_greeting}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            communication_prefs: {
+                              ...prev.communication_prefs,
+                              preferred_greeting: e.target.value
+                            }
+                          }))}
+                          placeholder="Hello, Hi, Hey there, etc."
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Response Length
+                        </label>
+                        <select
+                          value={formData.communication_prefs.response_length}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            communication_prefs: {
+                              ...prev.communication_prefs,
+                              response_length: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="brief">Brief</option>
+                          <option value="detailed">Detailed</option>
+                          <option value="comprehensive">Comprehensive</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Explanation Style
+                        </label>
+                        <select
+                          value={formData.communication_prefs.explanation_style}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            communication_prefs: {
+                              ...prev.communication_prefs,
+                              explanation_style: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="examples">With Examples</option>
+                          <option value="step_by_step">Step by Step</option>
+                          <option value="conceptual">Conceptual</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Feedback Style
+                        </label>
+                        <select
+                          value={formData.communication_prefs.feedback_preference}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            communication_prefs: {
+                              ...prev.communication_prefs,
+                              feedback_preference: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="direct">Direct</option>
+                          <option value="constructive">Constructive</option>
+                          <option value="encouraging">Encouraging</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                        Learning Style
+                      </label>
+                      <select
+                        value={formData.communication_prefs.learning_style}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          communication_prefs: {
+                            ...prev.communication_prefs,
+                            learning_style: e.target.value as any
+                          }
+                        }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-dark)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: 'var(--gray-light)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="visual_and_text">Visual & Text</option>
+                        <option value="text_only">Text Only</option>
+                        <option value="interactive">Interactive</option>
+                      </select>
+                    </div>
+
+                    {/* Context Preferences */}
+                    <h5 style={{ color: 'var(--gray-light)', fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>
+                      Context & Memory
+                    </h5>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.context_preferences.remember_conversations}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              context_preferences: {
+                                ...prev.context_preferences,
+                                remember_conversations: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Remember Conversations
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Allow AI to reference past conversations
+                        </p>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.context_preferences.use_context_from_previous}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              context_preferences: {
+                                ...prev.context_preferences,
+                                use_context_from_previous: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Use Previous Context
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Build on previous conversation topics
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Personalization Level
+                        </label>
+                        <select
+                          value={formData.context_preferences.personalization_level}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            context_preferences: {
+                              ...prev.context_preferences,
+                              personalization_level: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.context_preferences.adapt_to_patterns}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              context_preferences: {
+                                ...prev.context_preferences,
+                                adapt_to_patterns: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Adapt to Communication Patterns
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Learn from how you communicate
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Tab */}
+                {activeTab === 'content' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '20px', marginBottom: '24px', fontWeight: '600' }}>
+                      Content Preferences
+                    </h4>
+                    
+                    {/* Topics of Interest */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                        Topics of Interest
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                          type="text"
+                          value={newTopic}
+                          onChange={(e) => setNewTopic(e.target.value)}
+                          placeholder="Add a topic..."
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('topics_of_interest', newTopic)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '6px',
+                            color: 'var(--gray-light)',
+                            fontSize: '13px',
+                          }}
+                        />
+                        <button
+                          onClick={() => addArrayItem('topics_of_interest', newTopic)}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'var(--teal-bright)',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {formData.content_preferences.topics_of_interest.map((topic, index) => (
+                          <span
+                            key={index}
+                            style={{
+                              background: 'var(--blue-dark)',
+                              color: 'white',
+                              padding: '4px 12px',
+                              borderRadius: '16px',
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            {topic}
+                            <button
+                              onClick={() => removeArrayItem('topics_of_interest', index)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'white',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: 0,
+                                width: '16px',
+                                height: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Expertise Areas */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                        Expertise Areas
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                          type="text"
+                          value={newExpertise}
+                          onChange={(e) => setNewExpertise(e.target.value)}
+                          placeholder="Add an expertise area..."
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('expertise_areas', newExpertise)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '6px',
+                            color: 'var(--gray-light)',
+                            fontSize: '13px',
+                          }}
+                        />
+                        <button
+                          onClick={() => addArrayItem('expertise_areas', newExpertise)}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'var(--teal-bright)',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {formData.content_preferences.expertise_areas.map((area, index) => (
+                          <span
+                            key={index}
+                            style={{
+                              background: 'var(--green-dark)',
+                              color: 'white',
+                              padding: '4px 12px',
+                              borderRadius: '16px',
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            {area}
+                            <button
+                              onClick={() => removeArrayItem('expertise_areas', index)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'white',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: 0,
+                                width: '16px',
+                                height: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                        Preferred Example Types
+                      </label>
+                      <select
+                        value={formData.content_preferences.preferred_examples}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          content_preferences: {
+                            ...prev.content_preferences,
+                            preferred_examples: e.target.value as any
+                          }
+                        }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-dark)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          color: 'var(--gray-light)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="theoretical">Theoretical</option>
+                        <option value="real_world">Real World</option>
+                        <option value="mixed">Mixed</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* System Tab */}
+                {activeTab === 'system' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '20px', marginBottom: '24px', fontWeight: '600' }}>
+                      System Preferences
+                    </h4>
+                    
+                    {/* Notifications */}
+                    <h5 style={{ color: 'var(--gray-light)', fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>
+                      Notifications
+                    </h5>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.notifications.email}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              notifications: {
+                                ...prev.notifications,
+                                email: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Email Notifications
+                        </label>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.notifications.push}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              notifications: {
+                                ...prev.notifications,
+                                push: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Push Notifications
+                        </label>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.notifications.mentions}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              notifications: {
+                                ...prev.notifications,
+                                mentions: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Mention Notifications
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Privacy Settings */}
+                    <h5 style={{ color: 'var(--gray-light)', fontSize: '16px', marginBottom: '16px', fontWeight: '600' }}>
+                      Privacy Settings
+                    </h5>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.privacy_settings.profile_visible}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              privacy_settings: {
+                                ...prev.privacy_settings,
+                                profile_visible: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Profile Visible
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Allow others to see your profile information
+                        </p>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.privacy_settings.activity_visible}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              privacy_settings: {
+                                ...prev.privacy_settings,
+                                activity_visible: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Activity Visible
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Allow others to see your activity status
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Accessibility Tab */}
+                {activeTab === 'accessibility' && (
+                  <div>
+                    <h4 style={{ color: 'var(--gray-light)', fontSize: '20px', marginBottom: '24px', fontWeight: '600' }}>
+                      Accessibility Preferences
+                    </h4>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                          Font Size
+                        </label>
+                        <select
+                          value={formData.accessibility_prefs.font_size}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            accessibility_prefs: {
+                              ...prev.accessibility_prefs,
+                              font_size: e.target.value as any
+                            }
+                          }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'var(--bg-dark)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            color: 'var(--gray-light)',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <option value="small">Small</option>
+                          <option value="medium">Medium</option>
+                          <option value="large">Large</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.accessibility_prefs.high_contrast}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              accessibility_prefs: {
+                                ...prev.accessibility_prefs,
+                                high_contrast: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          High Contrast Mode
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Increase contrast for better visibility
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.accessibility_prefs.screen_reader_friendly}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              accessibility_prefs: {
+                                ...prev.accessibility_prefs,
+                                screen_reader_friendly: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Screen Reader Friendly
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Optimize interface for screen readers
+                        </p>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-med)', fontSize: '14px', fontWeight: '500' }}>
+                          <input
+                            type="checkbox"
+                            checked={formData.accessibility_prefs.reduced_motion}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              accessibility_prefs: {
+                                ...prev.accessibility_prefs,
+                                reduced_motion: e.target.checked
+                              }
+                            }))}
+                            style={{ transform: 'scale(1.2)' }}
+                          />
+                          Reduced Motion
+                        </label>
+                        <p style={{ fontSize: '12px', color: 'var(--gray-dark)', marginTop: '8px' }}>
+                          Minimize animations and transitions
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Save Button */}
                 <div style={{ 
