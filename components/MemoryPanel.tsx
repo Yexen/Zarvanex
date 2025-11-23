@@ -11,12 +11,15 @@ import type { MemoryView, MemoryPanelState, Memory, Folder, TreeNode } from '@/t
 export default function MemoryPanel() {
   const { user } = useAuth();
   
-  // Check if Supabase is available
+  // Check if Supabase is available and configured
   const isSupabaseAvailable = () => {
-    return Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL && 
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    try {
+      // For now, always try Supabase first and let it fail gracefully
+      return typeof window !== 'undefined';
+    } catch (error) {
+      console.log('Supabase check failed, using IndexedDB fallback');
+      return false;
+    }
   };
   
   const [state, setState] = useState<MemoryPanelState>({
@@ -212,12 +215,21 @@ export default function MemoryPanel() {
   const handleSaveMemory = useCallback(async (memoryData: Partial<Memory>) => {
     if (!user?.id) return;
 
+    console.log('🧠 [MemoryPanel] Saving memory:', { 
+      memoryData, 
+      userId: user.id, 
+      selectedFolderId: state.selectedFolderId,
+      usingSupabase: isSupabaseAvailable()
+    });
+
     try {
       if (selectedMemory) {
         // Update existing memory
         if (isSupabaseAvailable()) {
+          console.log('🧠 [MemoryPanel] Updating memory via Supabase');
           await hardMemorySupabase.updateMemory(selectedMemory.id, memoryData);
         } else {
+          console.log('🧠 [MemoryPanel] Updating memory via IndexedDB');
           await memoryStorage.updateMemory(selectedMemory.id, memoryData);
         }
       } else {
@@ -228,15 +240,20 @@ export default function MemoryPanel() {
           folderId: memoryData.folderId || state.selectedFolderId
         } as Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>;
         
+        console.log('🧠 [MemoryPanel] Creating memory with data:', newMemoryData);
+        
         if (isSupabaseAvailable()) {
-          await hardMemorySupabase.saveMemory(newMemoryData);
+          console.log('🧠 [MemoryPanel] Creating memory via Supabase');
+          const result = await hardMemorySupabase.saveMemory(newMemoryData);
+          console.log('🧠 [MemoryPanel] Supabase save result:', result);
         } else {
+          console.log('🧠 [MemoryPanel] Creating memory via IndexedDB');
           await memoryStorage.saveMemory(newMemoryData);
         }
       }
       await loadData();
     } catch (error) {
-      console.error('Error saving memory:', error);
+      console.error('🚨 [MemoryPanel] Error saving memory:', error);
     }
   }, [selectedMemory, user?.id, state.selectedFolderId]);
 

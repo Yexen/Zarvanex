@@ -80,21 +80,33 @@ function folderToSupabase(folder: Omit<Folder, 'id' | 'createdAt'>): Omit<Supaba
 export class HardMemorySupabase {
   // MEMORY OPERATIONS
   async saveMemory(memoryData: Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>): Promise<Memory> {
+    console.log('🧠 [Supabase] saveMemory called with:', memoryData);
+    console.log('🧠 [Supabase] isSupabaseAvailable:', isSupabaseAvailable());
+    
     if (!isSupabaseAvailable()) {
+      console.warn('🚨 [Supabase] Supabase not configured, throwing error');
       throw new Error('Supabase not configured');
     }
+    
+    const insertData = memoryToSupabase(memoryData);
+    console.log('🧠 [Supabase] Inserting data:', insertData);
+    
     const { data, error } = await supabase
       .from('memories')
-      .insert(memoryToSupabase(memoryData))
+      .insert(insertData)
       .select()
       .single();
 
+    console.log('🧠 [Supabase] Insert response:', { data, error });
+
     if (error) {
-      console.error('Error saving memory to Supabase:', error);
+      console.error('🚨 [Supabase] Error saving memory:', error);
       throw error;
     }
 
-    return supabaseToMemory(data);
+    const result = supabaseToMemory(data);
+    console.log('🧠 [Supabase] Converted result:', result);
+    return result;
   }
 
   async updateMemory(memoryId: string, updates: Partial<Memory>): Promise<Memory> {
