@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 interface AttachedFile {
   type: 'image' | 'document';
@@ -27,8 +29,95 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
 
+  const { user } = useAuth();
+  const { preferences, updatePreferences } = useUserPreferences(user?.id || null);
+
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
   const MAX_FILES = 10;
+
+  // Parse personalization command
+  const parsePersonalizationCommand = async (message: string): Promise<boolean> => {
+    const personalizationMatch = message.match(/^\.\/personalization\s+(.+)$/i);
+    if (!personalizationMatch) return false;
+
+    const input = personalizationMatch[1].trim();
+    console.log('🎯 Personalization command detected:', input);
+
+    try {
+      // Simple parsing: split by commas and try to categorize
+      const parts = input.split(',').map(p => p.trim()).filter(Boolean);
+      
+      let conversationStyle = preferences?.conversation_style?.tone || 'friendly';
+      let interests: string[] = preferences?.interests || [];
+      let background = preferences?.background || '';
+
+      // Parse each part and categorize
+      for (const part of parts) {
+        const lower = part.toLowerCase();
+        
+        // Check for conversation styles
+        if (lower.includes('professional') || lower.includes('formal')) {
+          conversationStyle = 'professional';
+        } else if (lower.includes('casual') || lower.includes('relaxed')) {
+          conversationStyle = 'casual';
+        } else if (lower.includes('friendly') || lower.includes('warm')) {
+          conversationStyle = 'friendly';
+        } else if (lower.includes('balanced') || lower.includes('neutral')) {
+          conversationStyle = 'balanced';
+        }
+        // Check for common interests/skills
+        else if (lower.includes('cod') || lower.includes('program') || lower.includes('software')) {
+          if (!interests.some(i => i.toLowerCase().includes('coding'))) {
+            interests.push('coding');
+          }
+        } else if (lower.includes('ai') || lower.includes('machine learning') || lower.includes('ml')) {
+          if (!interests.some(i => i.toLowerCase().includes('ai'))) {
+            interests.push('AI');
+          }
+        } else if (lower.includes('design') || lower.includes('ui') || lower.includes('ux')) {
+          if (!interests.some(i => i.toLowerCase().includes('design'))) {
+            interests.push('design');
+          }
+        }
+        // Otherwise, treat as background/bio info
+        else if (part.length > 3) {
+          background += (background ? '. ' : '') + part;
+        }
+      }
+
+      // Update preferences
+      await updatePreferences({
+        conversation_style: {
+          tone: conversationStyle as 'professional' | 'casual' | 'friendly' | 'balanced',
+          formality: preferences?.conversation_style?.formality || 'casual',
+          verbosity: preferences?.conversation_style?.verbosity || 'detailed',
+          humor: preferences?.conversation_style?.humor ?? true,
+          empathy_level: preferences?.conversation_style?.empathy_level || 'high',
+          technical_depth: preferences?.conversation_style?.technical_depth || 'medium'
+        },
+        interests,
+        background: background || undefined,
+      });
+
+      console.log('✅ Personalization updated:', { conversationStyle, interests, background });
+      
+      // Clear the command from input
+      setMessage('');
+      
+      // Show confirmation message
+      setTimeout(() => {
+        setMessage(`Personalization updated! Style: ${conversationStyle}, Interests: ${interests.join(', ')}, Background: ${background ? 'Updated' : 'Not set'}`);
+        setTimeout(() => setMessage(''), 3000);
+      }, 100);
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error parsing personalization command:', error);
+      setMessage('❌ Error updating personalization. Please try again.');
+      setTimeout(() => setMessage(''), 3000);
+      return true; // Still consumed the command
+    }
+  };
 
   // Load PDF.js from CDN
   useEffect(() => {
@@ -81,8 +170,13 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
     };
   }, []);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (message.trim() || files.length > 0) {
+      // Check for commands before sending
+      if (message.trim()) {
+        const commandHandled = await parsePersonalizationCommand(message.trim());
+        if (commandHandled) return; // Don't send the command as a regular message
+      }
       // Separate images and documents with text
       const imageFiles = files.filter(f => f.type === 'image' && f.data);
       const documentFiles = files.filter(f => f.extractedText);
@@ -453,7 +547,10 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleInput}
-            placeholder="Message Zarvânex..."
+            placeholder={message.startsWith('./') ? 
+              "Type: ./personalization friendly, coding enthusiast, prefer detailed explanations" : 
+              "Message Zarvânex... (try: ./personalization)"
+            }
             disabled={disabled}
             rows={1}
             className="message-input"

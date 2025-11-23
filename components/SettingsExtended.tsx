@@ -260,7 +260,39 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
         style={{ maxWidth: '900px', maxHeight: '90vh' }}
       >
         <div className="search-modal-header">
-          <h3 className="search-modal-title">Extended Personalization</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--gray-med)',
+                cursor: 'pointer',
+                padding: '8px',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.color = 'var(--gray-light)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none';
+                e.currentTarget.style.color = 'var(--gray-med)';
+              }}
+              aria-label="Back to basic settings"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            <h3 className="search-modal-title">Extended Personalization</h3>
+          </div>
           <button
             className="search-modal-close"
             onClick={onClose}
