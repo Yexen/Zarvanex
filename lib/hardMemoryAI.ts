@@ -1,5 +1,6 @@
 import { hardMemorySupabase } from './hardMemorySupabase';
 import type { Memory } from '@/types/memory';
+import { entityExtractor, type EntityIndex } from '@/lib/entityExtractor';
 
 interface HardMemoryContext {
   foundMemories: Memory[];
@@ -79,6 +80,33 @@ function extractEntities(query: string): string[] {
   // Remove duplicates and common words
   const stopWords = ['What', 'The', 'And', 'Are', 'You', 'How', 'Many', 'Called', 'Name', 'My', 'Is'];
   return [...new Set(entities)].filter(entity => !stopWords.includes(entity));
+}
+
+/**
+ * Entity-aware search that checks entity tags first
+ */
+async function performEntitySearch(userId: string, query: string): Promise<Memory[]> {
+  console.log('🏷️ [Hard Memory] Performing entity search for:', query);
+  
+  // Extract entities from the query
+  const queryEntities = entityExtractor.extractEntities(query);
+  console.log('🏷️ [Hard Memory] Query entities:', queryEntities.map(e => e.text));
+  
+  if (queryEntities.length === 0) {
+    return [];
+  }
+  
+  // Search for memories with matching entity tags
+  const allMemories = await hardMemorySupabase.getAllMemories(userId);
+  const entityMatches = allMemories.filter(memory => {
+    return queryEntities.some(queryEntity => {
+      const entityTag = `entity:${queryEntity.text.toLowerCase()}`;
+      return memory.tags.includes(entityTag);
+    });
+  });
+  
+  console.log('🏷️ [Hard Memory] Entity tag matches:', entityMatches.length);
+  return entityMatches;
 }
 
 /**
@@ -176,24 +204,45 @@ export async function getHardMemoryContext(
 
     if (currentQuery.trim()) {
       if (isFactual) {
-        // For factual queries, prioritize exact keyword search
-        console.log('🧠 [Hard Memory] Using keyword search for factual query');
-        const keywordResults = await performKeywordSearch(userId, currentQuery);
-        foundMemories.push(...keywordResults);
+        // For factual queries, use entity-aware search with confidence scoring
+        console.log('🧠 [Hard Memory] Using entity-aware search for factual query');
         
-        // If keyword search didn't find enough, supplement with semantic search
-        if (foundMemories.length < maxResults) {
-          console.log('🧠 [Hard Memory] Supplementing with semantic search');
+        // Step 1: Entity search (highest confidence)
+        const entityResults = await performEntitySearch(userId, currentQuery);
+        foundMemories.push(...entityResults);
+        console.log('🏷️ [Hard Memory] Entity search found:', entityResults.length, 'memories');
+        
+        // Step 2: If entity search found results, we have high confidence - limit additional searches
+        if (entityResults.length > 0) {
+          console.log('🏷️ [Hard Memory] High confidence entity match found, limiting additional searches');
+          // Only add a few more from semantic search for context
           const searchResults = await hardMemorySupabase.searchMemories(
             currentQuery,
             searchTags,
             userId
           );
-          
-          // Add semantic results that aren't already in keyword results
           const foundIds = new Set(foundMemories.map(m => m.id));
-          const additionalResults = searchResults.filter(m => !foundIds.has(m.id));
+          const additionalResults = searchResults.filter(m => !foundIds.has(m.id)).slice(0, 3);
           foundMemories.push(...additionalResults);
+        } else {
+          // Step 3: No entity matches, try keyword search
+          console.log('🧠 [Hard Memory] No entity matches, trying keyword search');
+          const keywordResults = await performKeywordSearch(userId, currentQuery);
+          foundMemories.push(...keywordResults);
+          
+          // Step 4: Supplement with semantic search if needed
+          if (foundMemories.length < maxResults) {
+            console.log('🧠 [Hard Memory] Supplementing with semantic search');
+            const searchResults = await hardMemorySupabase.searchMemories(
+              currentQuery,
+              searchTags,
+              userId
+            );
+            
+            const foundIds = new Set(foundMemories.map(m => m.id));
+            const additionalResults = searchResults.filter(m => !foundIds.has(m.id));
+            foundMemories.push(...additionalResults);
+          }
         }
       } else {
         // For conceptual queries, use semantic search first
@@ -205,13 +254,16 @@ export async function getHardMemoryContext(
         );
         foundMemories.push(...searchResults);
         
-        // If semantic search didn't find enough, supplement with keyword search
+        // If semantic search didn't find enough, supplement with entity and keyword search
         if (foundMemories.length < maxResults) {
-          console.log('🧠 [Hard Memory] Supplementing with keyword search');
+          console.log('🧠 [Hard Memory] Supplementing with entity and keyword search');
+          
+          const entityResults = await performEntitySearch(userId, currentQuery);
           const keywordResults = await performKeywordSearch(userId, currentQuery);
           
           const foundIds = new Set(foundMemories.map(m => m.id));
-          const additionalResults = keywordResults.filter(m => !foundIds.has(m.id));
+          const additionalResults = [...entityResults, ...keywordResults]
+            .filter(m => !foundIds.has(m.id));
           foundMemories.push(...additionalResults);
         }
       }

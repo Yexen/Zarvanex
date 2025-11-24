@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Memory, Folder } from '@/types/memory';
+import { entityExtractor, type ExtractedEntity, type EntityIndex } from '@/lib/entityExtractor';
 
 // Check if Supabase is available
 const isSupabaseAvailable = () => {
@@ -106,7 +107,43 @@ export class HardMemorySupabase {
 
     const result = supabaseToMemory(data);
     console.log('🧠 [Supabase] Converted result:', result);
+    
+    // Extract and index entities for this memory
+    try {
+      await this.extractAndIndexEntities(result);
+    } catch (entityError) {
+      console.error('🚨 [Supabase] Error extracting entities:', entityError);
+      // Don't fail the save operation if entity extraction fails
+    }
+    
     return result;
+  }
+
+  /**
+   * Extract entities from memory content and store in entity index
+   */
+  private async extractAndIndexEntities(memory: Memory): Promise<void> {
+    console.log('🏷️ [Supabase] Extracting entities for memory:', memory.title);
+    
+    const fullText = memory.title + '\n\n' + memory.content;
+    const entities = entityExtractor.extractEntities(fullText);
+    const entityIndex = entityExtractor.buildEntityIndex(memory.id, entities);
+    
+    console.log('🏷️ [Supabase] Extracted entity index:', Object.keys(entityIndex));
+    
+    // Store entity index (for now, we'll store as JSON in the memory tags or create a separate table later)
+    // For immediate implementation, let's enhance the tags with entity information
+    const entityTags = Object.keys(entityIndex).map(entity => `entity:${entity}`);
+    const combinedTags = [...memory.tags, ...entityTags].slice(0, 50); // Limit tags
+    
+    if (entityTags.length > 0) {
+      await supabase
+        .from('memories')
+        .update({ tags: combinedTags })
+        .eq('id', memory.id);
+      
+      console.log('🏷️ [Supabase] Added entity tags:', entityTags.length);
+    }
   }
 
   async updateMemory(memoryId: string, updates: Partial<Memory>): Promise<Memory> {
