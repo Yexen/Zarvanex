@@ -8,6 +8,7 @@ import ChatInput from './ChatInput';
 import ModelSelector from './ModelSelector';
 import Login from './Login';
 import SaveMomentModal from './SaveMomentModal';
+import FloatingMemoryPopup from './FloatingMemoryPopup';
 import { sendMessage, getAvailableModels, generateTitle } from '@/lib/lmstudio';
 import { GROQ_MODELS } from '@/lib/groq';
 import { OPENROUTER_MODELS } from '@/lib/openrouter';
@@ -49,6 +50,7 @@ function ChatInterfaceInner() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [saveMoment, setSaveMoment] = useState<{ user: Message; ai: Message } | null>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const [isMemoryPopupOpen, setIsMemoryPopupOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
@@ -1237,6 +1239,7 @@ function ChatInterfaceInner() {
         onRenameConversation={async (id, newTitle) => {
           await updateConversation(id, { title: newTitle });
         }}
+        onOpenHardMemory={() => setIsMemoryPopupOpen(true)}
         className={isMobileMenuOpen ? 'mobile-open' : ''}
       />
 
@@ -1498,6 +1501,12 @@ function ChatInterfaceInner() {
           onClose={() => setSaveMoment(null)}
         />
       )}
+
+      {/* Floating Hard Memory Popup */}
+      <FloatingMemoryPopup
+        isOpen={isMemoryPopupOpen}
+        onClose={() => setIsMemoryPopupOpen(false)}
+      />
     </div>
   );
 }

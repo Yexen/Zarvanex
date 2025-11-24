@@ -14,7 +14,8 @@ interface SidebarProps {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onDeleteConversation?: (id: string) => void;
-  onRenameConversation?: (id: string, newTitle: string) => void;
+  onRenameConversation?: (id: string) => void;
+  onOpenHardMemory?: () => void;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export default function Sidebar({
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
+  onOpenHardMemory,
   className = '',
 }: SidebarProps) {
   const { user, signOut } = useAuth();
@@ -348,7 +350,7 @@ export default function Sidebar({
                   size="medium"
                   showMenu={true}
                   onOpenSettings={() => setIsSettingsOpen(true)}
-                  onOpenHardMemory={() => window.location.href = '/memories'}
+                  onOpenHardMemory={onOpenHardMemory}
                 />
               </div>
             )}
