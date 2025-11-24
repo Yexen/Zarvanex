@@ -2,9 +2,11 @@ import type { Memory, Folder } from '@/types/memory';
 
 // IndexedDB database setup
 const DB_NAME = 'zarvanex-memories';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented for personalization + entity index
 const MEMORY_STORE = 'memories';
 const FOLDER_STORE = 'folders';
+const PERSONALIZATION_STORE = 'personalization';
+const ENTITY_INDEX_STORE = 'entityIndex';
 
 interface DBStores {
   [MEMORY_STORE]: Memory;
@@ -41,6 +43,21 @@ class MemoryStorage {
           const folderStore = db.createObjectStore(FOLDER_STORE, { keyPath: 'id' });
           folderStore.createIndex('parentId', 'parentId', { unique: false });
           folderStore.createIndex('userId', 'userId', { unique: false });
+        }
+
+        // Create personalization store (for smart search chunks)
+        if (!db.objectStoreNames.contains(PERSONALIZATION_STORE)) {
+          const personalizationStore = db.createObjectStore(PERSONALIZATION_STORE, { keyPath: 'id' });
+          personalizationStore.createIndex('userId', 'userId', { unique: false });
+          personalizationStore.createIndex('section', 'section', { unique: false });
+          personalizationStore.createIndex('entities', 'entities', { unique: false, multiEntry: true });
+          personalizationStore.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+
+        // Create entity index store (for fast entity lookup)
+        if (!db.objectStoreNames.contains(ENTITY_INDEX_STORE)) {
+          const entityIndexStore = db.createObjectStore(ENTITY_INDEX_STORE, { keyPath: 'name' });
+          entityIndexStore.createIndex('type', 'type', { unique: false });
         }
       };
     });
@@ -318,12 +335,117 @@ class MemoryStorage {
   async getAllTags(): Promise<string[]> {
     const memories = await this.getAllMemories();
     const tagSet = new Set<string>();
-    
+
     memories.forEach(memory => {
       memory.tags.forEach(tag => tagSet.add(tag));
     });
 
     return Array.from(tagSet).sort();
+  }
+
+  // PERSONALIZATION CHUNK OPERATIONS (for smart search)
+  async savePersonalizationChunk(chunk: any): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([PERSONALIZATION_STORE], 'readwrite');
+      const store = transaction.objectStore(PERSONALIZATION_STORE);
+      const request = store.put(chunk);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  async getAllPersonalizationChunks(userId?: string): Promise<any[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([PERSONALIZATION_STORE], 'readonly');
+      const store = transaction.objectStore(PERSONALIZATION_STORE);
+
+      const request = userId
+        ? store.index('userId').getAll(userId)
+        : store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || []);
+    });
+  }
+
+  async clearPersonalizationChunks(userId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const chunks = await this.getAllPersonalizationChunks(userId);
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([PERSONALIZATION_STORE], 'readwrite');
+      const store = transaction.objectStore(PERSONALIZATION_STORE);
+
+      let completed = 0;
+      chunks.forEach(chunk => {
+        const request = store.delete(chunk.id);
+        request.onsuccess = () => {
+          completed++;
+          if (completed === chunks.length) resolve();
+        };
+        request.onerror = () => reject(request.error);
+      });
+
+      if (chunks.length === 0) resolve();
+    });
+  }
+
+  // ENTITY INDEX OPERATIONS (for smart search)
+  async saveEntityToIndex(entity: any): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([ENTITY_INDEX_STORE], 'readwrite');
+      const store = transaction.objectStore(ENTITY_INDEX_STORE);
+      const request = store.put(entity);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  async getEntityIndex(): Promise<any> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([ENTITY_INDEX_STORE], 'readonly');
+      const store = transaction.objectStore(ENTITY_INDEX_STORE);
+      const request = store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const entities = request.result || [];
+        const index: any = {};
+        entities.forEach((entity: any) => {
+          index[entity.name] = entity;
+        });
+        resolve(index);
+      };
+    });
+  }
+
+  async clearEntityIndex(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([ENTITY_INDEX_STORE], 'readwrite');
+      const store = transaction.objectStore(ENTITY_INDEX_STORE);
+      const request = store.clear();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  // Get raw database for advanced operations (used by hybrid searcher)
+  getDatabase(): IDBDatabase | null {
+    return this.db;
   }
 }
 

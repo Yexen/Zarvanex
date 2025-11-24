@@ -23,6 +23,7 @@ import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization }
 import { getConversationMemory, formatMemoryForPrompt } from '@/lib/memory';
 import { getHardMemoryContext, formatHardMemoryForPrompt } from '@/lib/hardMemoryAI';
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
+import { processMessageWithSmartSearch, isSmartSearchEnabled } from '@/lib/smartSearch';
 
 function ChatInterfaceInner() {
   const router = useRouter();
@@ -223,13 +224,13 @@ function ChatInterfaceInner() {
   // Helper function to send message to Groq API with streaming
   const sendGroqMessage = async (messages: Message[], modelId: string): Promise<string> => {
     // Generate system prompt from user preferences
-    console.log('[DEBUG] sendGroqMessage: Generating system prompt', { 
-      hasPreferences: !!preferences, 
+    console.log('[DEBUG] sendGroqMessage: Generating system prompt', {
+      hasPreferences: !!preferences,
       shouldInclude: shouldIncludePersonalization(preferences),
-      preferencesNickname: preferences?.nickname 
+      preferencesNickname: preferences?.nickname
     });
-    
-    let systemPrompt = shouldIncludePersonalization(preferences) 
+
+    let systemPrompt = shouldIncludePersonalization(preferences)
       ? generateSystemPrompt(preferences)
       : "You are Zarvânex, a helpful AI assistant.";
 
@@ -237,13 +238,34 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
+        // Add smart search context (new intelligent search system)
+        const smartSearchEnabled = await isSmartSearchEnabled(user.id);
+        if (smartSearchEnabled) {
+          const smartSearchResult = await processMessageWithSmartSearch(
+            currentQuery,
+            user.id,
+            {
+              openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+              openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+            }
+          );
+          if (smartSearchResult.systemPrompt) {
+            console.log('[SmartSearch] Adding context:', {
+              intent: smartSearchResult.intent,
+              chunks: smartSearchResult.totalChunks,
+              tokens: smartSearchResult.totalTokens,
+            });
+            systemPrompt += '\n\n' + smartSearchResult.systemPrompt;
+          }
+        }
+
         // Add conversational memory
         const memoryContext = await getConversationMemory(user.id, currentQuery);
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
         }
-        
+
         // Add hard memory context
         const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
         const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
