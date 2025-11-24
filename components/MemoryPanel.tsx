@@ -283,10 +283,10 @@ export default function MemoryPanel() {
   }, [selectedMemory]);
 
   const handleDeleteNode = useCallback(async (nodeId: string, type: 'folder' | 'memory') => {
-    const confirmMessage = type === 'folder' 
+    const confirmMessage = type === 'folder'
       ? 'Delete this folder? Memories inside will be moved to root.'
       : 'Delete this memory? This action cannot be undone.';
-      
+
     if (!confirm(confirmMessage)) return;
 
     try {
@@ -303,22 +303,69 @@ export default function MemoryPanel() {
           await memoryStorage.deleteMemory(nodeId);
         }
       }
-      
+
       // Clear selection if we deleted the selected item
       if (state.selectedFolderId === nodeId || state.selectedMemoryId === nodeId) {
-        setState(prev => ({ 
-          ...prev, 
-          selectedFolderId: null, 
-          selectedMemoryId: null 
+        setState(prev => ({
+          ...prev,
+          selectedFolderId: null,
+          selectedMemoryId: null
         }));
         setSelectedMemory(null);
       }
-      
+
       await loadData();
     } catch (error) {
       console.error('Error deleting node:', error);
+      alert(`Error deleting ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [state.selectedFolderId, state.selectedMemoryId]);
+  }, [state.selectedFolderId, state.selectedMemoryId, user?.id]);
+
+  const handleRenameNode = useCallback(async (nodeId: string, type: 'folder' | 'memory', newName: string) => {
+    try {
+      if (type === 'folder') {
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.updateFolder(nodeId, { name: newName });
+        } else {
+          await memoryStorage.updateFolder(nodeId, { name: newName });
+        }
+      } else {
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.updateMemory(nodeId, { title: newName });
+        } else {
+          await memoryStorage.updateMemory(nodeId, { title: newName });
+        }
+      }
+
+      await loadData();
+    } catch (error) {
+      console.error('Error renaming node:', error);
+      alert(`Error renaming ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleMoveNode = useCallback(async (nodeId: string, type: 'folder' | 'memory', targetFolderId: string | null) => {
+    try {
+      if (type === 'folder') {
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.updateFolder(nodeId, { parentId: targetFolderId });
+        } else {
+          await memoryStorage.updateFolder(nodeId, { parentId: targetFolderId });
+        }
+      } else {
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.updateMemory(nodeId, { folderId: targetFolderId });
+        } else {
+          await memoryStorage.updateMemory(nodeId, { folderId: targetFolderId });
+        }
+      }
+
+      await loadData();
+    } catch (error) {
+      console.error('Error moving node:', error);
+      alert(`Error moving ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
 
   const handleSplitMemory = useCallback(async (memory: Memory) => {
     if (!user?.id) return;
@@ -539,18 +586,45 @@ export default function MemoryPanel() {
       return;
     }
 
+    console.log('🔍 [Search] Starting search for:', query);
+
     try {
       let results: Memory[];
       if (isSupabaseAvailable() && user?.id) {
-        results = await hardMemorySupabase.searchMemories(query, state.searchTags, user.id);
+        console.log('🔍 [Search] Using Supabase search');
+        try {
+          results = await hardMemorySupabase.searchMemories(query, state.searchTags, user.id);
+          console.log('🔍 [Search] Supabase results:', results.length);
+        } catch (supabaseError) {
+          console.warn('🔍 [Search] Supabase search failed, falling back to client-side search:', supabaseError);
+          // Fallback to client-side search if Supabase fails
+          results = memories.filter(memory => {
+            const lowerQuery = query.toLowerCase();
+            return memory.title.toLowerCase().includes(lowerQuery) ||
+                   memory.content.toLowerCase().includes(lowerQuery) ||
+                   memory.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+          });
+          console.log('🔍 [Search] Client-side fallback results:', results.length);
+        }
       } else {
+        console.log('🔍 [Search] Using IndexedDB search');
         results = await memoryStorage.searchMemories(query, state.searchTags);
+        console.log('🔍 [Search] IndexedDB results:', results.length);
       }
       setSearchResults(results);
     } catch (error) {
-      console.error('Error searching memories:', error);
+      console.error('🔍 [Search] Error searching memories:', error);
+      // Fallback to simple client-side search
+      const lowerQuery = query.toLowerCase();
+      const fallbackResults = memories.filter(memory =>
+        memory.title.toLowerCase().includes(lowerQuery) ||
+        memory.content.toLowerCase().includes(lowerQuery) ||
+        memory.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+      );
+      console.log('🔍 [Search] Final fallback results:', fallbackResults.length);
+      setSearchResults(fallbackResults);
     }
-  }, [state.searchTags]);
+  }, [state.searchTags, user?.id, memories]);
 
   // Search when query changes
   useEffect(() => {
@@ -794,7 +868,10 @@ export default function MemoryPanel() {
                   onCreateFolder={handleCreateFolder}
                   onCreateMemory={handleCreateMemory}
                   onDeleteNode={handleDeleteNode}
+                  onRenameNode={handleRenameNode}
+                  onMoveNode={handleMoveNode}
                   selectedNodeId={state.selectedMemoryId || state.selectedFolderId || undefined}
+                  allFolders={treeNodes.filter(node => node.type === 'folder')}
                 />
               </div>
             </div>
@@ -879,7 +956,11 @@ export default function MemoryPanel() {
                     {searchResults.map(memory => (
                       <div
                         key={memory.id}
-                        onClick={() => handleSelectNode(memory.id, 'memory')}
+                        onClick={() => {
+                          // Switch to browse view and select the memory
+                          setState(prev => ({ ...prev, currentView: 'browse' }));
+                          handleSelectNode(memory.id, 'memory');
+                        }}
                         style={{
                           padding: '16px',
                           background: 'var(--darker-bg)',
@@ -888,20 +969,28 @@ export default function MemoryPanel() {
                           cursor: 'pointer',
                           transition: 'all 0.2s'
                         }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(64, 224, 208, 0.05)';
+                          e.currentTarget.style.borderColor = 'rgba(64, 224, 208, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'var(--darker-bg)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        }}
                       >
-                        <h4 style={{ 
-                          color: 'var(--gray-light)', 
-                          fontSize: '16px', 
+                        <h4 style={{
+                          color: 'var(--gray-light)',
+                          fontSize: '16px',
                           fontWeight: '600',
-                          marginBottom: '8px' 
+                          marginBottom: '8px'
                         }}>
                           {memory.title}
                         </h4>
-                        <p style={{ 
-                          color: 'var(--gray-med)', 
+                        <p style={{
+                          color: 'var(--gray-med)',
                           fontSize: '14px',
                           lineHeight: '1.4',
-                          marginBottom: '8px' 
+                          marginBottom: '8px'
                         }}>
                           {memory.content.slice(0, 150)}{memory.content.length > 150 ? '...' : ''}
                         </p>
@@ -944,102 +1033,178 @@ export default function MemoryPanel() {
 
         {/* Timeline View */}
         {state.currentView === 'timeline' && (
-          <div style={{ 
-            width: '100%', 
-            padding: '24px',
+          <div style={{
+            width: '100%',
+            padding: '48px 24px',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            overflow: 'auto'
           }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
-              <h3 style={{ 
-                fontSize: '24px', 
-                fontWeight: '600', 
+            <div style={{ margin: '0 auto', width: '100%', maxWidth: '1400px' }}>
+              <h3 style={{
+                fontSize: '24px',
+                fontWeight: '600',
                 color: 'var(--gray-light)',
-                marginBottom: '24px',
-                textAlign: 'center' 
+                marginBottom: '48px',
+                textAlign: 'center'
               }}>
                 Memory Timeline
               </h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {memories
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .map(memory => (
-                    <div
-                      key={memory.id}
-                      onClick={() => handleSelectNode(memory.id, 'memory')}
-                      style={{
-                        padding: '16px',
-                        background: 'var(--darker-bg)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                        <h4 style={{ 
-                          color: 'var(--gray-light)', 
-                          fontSize: '16px', 
-                          fontWeight: '600',
-                          margin: 0
-                        }}>
-                          {memory.title}
-                        </h4>
-                        <span style={{ 
-                          color: 'var(--gray-dark)', 
-                          fontSize: '12px',
-                          whiteSpace: 'nowrap',
-                          marginLeft: '16px'
-                        }}>
-                          {new Date(memory.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      
-                      <p style={{ 
-                        color: 'var(--gray-med)', 
-                        fontSize: '14px',
-                        lineHeight: '1.4',
-                        marginBottom: memory.tags.length > 0 ? '8px' : 0,
-                        margin: 0
-                      }}>
-                        {memory.content.slice(0, 120)}{memory.content.length > 120 ? '...' : ''}
-                      </p>
-                      
-                      {memory.tags.length > 0 && (
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                          {memory.tags.slice(0, 3).map(tag => (
-                            <span
-                              key={tag}
-                              style={{
-                                background: 'var(--teal-dark)',
-                                color: 'white',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '11px'
-                              }}
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                          {memory.tags.length > 3 && (
-                            <span style={{ color: 'var(--gray-dark)', fontSize: '11px' }}>
-                              +{memory.tags.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
 
-              {memories.length === 0 && (
-                <div style={{ 
+              {memories.length === 0 ? (
+                <div style={{
                   textAlign: 'center',
-                  color: 'var(--gray-med)', 
-                  fontSize: '14px' 
+                  color: 'var(--gray-med)',
+                  fontSize: '14px'
                 }}>
                   No memories yet. Create your first one!
+                </div>
+              ) : (
+                <div style={{ position: 'relative', paddingLeft: '40px' }}>
+                  {/* Timeline line */}
+                  <div style={{
+                    position: 'absolute',
+                    left: '16px',
+                    top: '24px',
+                    bottom: '24px',
+                    width: '2px',
+                    background: 'linear-gradient(180deg, var(--teal-bright) 0%, rgba(64, 224, 208, 0.2) 100%)'
+                  }} />
+
+                  {/* Timeline nodes */}
+                  {memories
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((memory, index) => {
+                      const date = new Date(memory.createdAt);
+                      const isSelected = state.selectedMemoryId === memory.id;
+
+                      return (
+                        <div
+                          key={memory.id}
+                          style={{
+                            position: 'relative',
+                            marginBottom: '32px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          {/* Timeline dot */}
+                          <div style={{
+                            position: 'absolute',
+                            left: '-32px',
+                            top: '20px',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            background: isSelected ? 'var(--teal-bright)' : 'rgba(64, 224, 208, 0.5)',
+                            border: `2px solid ${isSelected ? '#fff' : 'var(--bg-primary)'}`,
+                            boxShadow: isSelected ? '0 0 12px var(--teal-bright)' : 'none',
+                            transition: 'all 0.3s ease',
+                            zIndex: 2
+                          }} />
+
+                          {/* Date label */}
+                          <div style={{
+                            position: 'absolute',
+                            left: '-28px',
+                            top: '36px',
+                            transform: 'rotate(-90deg) translateX(-50%)',
+                            transformOrigin: 'left center',
+                            fontSize: '11px',
+                            color: 'var(--gray-dark)',
+                            whiteSpace: 'nowrap',
+                            fontWeight: '500'
+                          }}>
+                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+
+                          {/* Memory card */}
+                          <div
+                            onClick={() => {
+                              setState(prev => ({ ...prev, currentView: 'browse' }));
+                              handleSelectNode(memory.id, 'memory');
+                            }}
+                            style={{
+                              padding: '20px',
+                              background: isSelected ? 'rgba(64, 224, 208, 0.1)' : 'var(--darker-bg)',
+                              border: isSelected ? '2px solid var(--teal-bright)' : '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease',
+                              marginLeft: '32px',
+                              boxShadow: isSelected ? '0 4px 24px rgba(64, 224, 208, 0.2)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'rgba(64, 224, 208, 0.05)';
+                                e.currentTarget.style.borderColor = 'rgba(64, 224, 208, 0.3)';
+                                e.currentTarget.style.transform = 'translateX(8px)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'var(--darker-bg)';
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                e.currentTarget.style.transform = 'translateX(0)';
+                              }
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                              <h4 style={{
+                                color: isSelected ? 'var(--teal-bright)' : 'var(--gray-light)',
+                                fontSize: '18px',
+                                fontWeight: '600',
+                                margin: 0
+                              }}>
+                                {memory.title}
+                              </h4>
+                              <span style={{
+                                color: 'var(--gray-dark)',
+                                fontSize: '12px',
+                                whiteSpace: 'nowrap',
+                                marginLeft: '16px'
+                              }}>
+                                {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+
+                            <p style={{
+                              color: 'var(--gray-med)',
+                              fontSize: '14px',
+                              lineHeight: '1.6',
+                              marginBottom: memory.tags.length > 0 ? '12px' : 0,
+                              margin: 0
+                            }}>
+                              {memory.content.slice(0, 200)}{memory.content.length > 200 ? '...' : ''}
+                            </p>
+
+                            {memory.tags.length > 0 && (
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
+                                {memory.tags.slice(0, 5).map(tag => (
+                                  <span
+                                    key={tag}
+                                    style={{
+                                      background: 'var(--teal-dark)',
+                                      color: 'white',
+                                      padding: '4px 10px',
+                                      borderRadius: '12px',
+                                      fontSize: '11px',
+                                      fontWeight: '500'
+                                    }}
+                                  >
+                                    #{tag}
+                                  </span>
+                                ))}
+                                {memory.tags.length > 5 && (
+                                  <span style={{ color: 'var(--gray-dark)', fontSize: '11px', padding: '4px' }}>
+                                    +{memory.tags.length - 5} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </div>

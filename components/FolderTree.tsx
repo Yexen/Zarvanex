@@ -10,7 +10,10 @@ interface FolderTreeProps {
   onCreateFolder: (parentId?: string) => void;
   onCreateMemory: (folderId?: string) => void;
   onDeleteNode: (nodeId: string, type: 'folder' | 'memory') => void;
+  onRenameNode: (nodeId: string, type: 'folder' | 'memory', newName: string) => void;
+  onMoveNode: (nodeId: string, type: 'folder' | 'memory', targetFolderId: string | null) => void;
   selectedNodeId?: string;
+  allFolders: TreeNode[]; // For move dialog
 }
 
 export default function FolderTree({
@@ -20,7 +23,10 @@ export default function FolderTree({
   onCreateFolder,
   onCreateMemory,
   onDeleteNode,
-  selectedNodeId
+  onRenameNode,
+  onMoveNode,
+  selectedNodeId,
+  allFolders
 }: FolderTreeProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -79,9 +85,12 @@ export default function FolderTree({
               onCreateFolder={onCreateFolder}
               onCreateMemory={onCreateMemory}
               onDeleteNode={onDeleteNode}
+              onRenameNode={onRenameNode}
+              onMoveNode={onMoveNode}
               selectedNodeId={selectedNodeId}
               hoveredNodeId={hoveredNodeId}
               setHoveredNodeId={setHoveredNodeId}
+              allFolders={allFolders}
             />
           ))}
         </div>
@@ -97,9 +106,12 @@ interface TreeItemProps {
   onCreateFolder: (parentId?: string) => void;
   onCreateMemory: (folderId?: string) => void;
   onDeleteNode: (nodeId: string, type: 'folder' | 'memory') => void;
+  onRenameNode: (nodeId: string, type: 'folder' | 'memory', newName: string) => void;
+  onMoveNode: (nodeId: string, type: 'folder' | 'memory', targetFolderId: string | null) => void;
   selectedNodeId?: string;
   hoveredNodeId: string | null;
   setHoveredNodeId: (id: string | null) => void;
+  allFolders: TreeNode[];
 }
 
 function TreeItem({
@@ -109,12 +121,17 @@ function TreeItem({
   onCreateFolder,
   onCreateMemory,
   onDeleteNode,
+  onRenameNode,
+  onMoveNode,
   selectedNodeId,
   hoveredNodeId,
-  setHoveredNodeId
+  setHoveredNodeId,
+  allFolders
 }: TreeItemProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const moveDialogRef = useRef<HTMLDivElement>(null);
 
   const isSelected = selectedNodeId === node.id;
   const isHovered = hoveredNodeId === node.id;
@@ -126,13 +143,30 @@ function TreeItem({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowMenu(false);
       }
+      if (moveDialogRef.current && !moveDialogRef.current.contains(event.target as Node)) {
+        setShowMoveDialog(false);
+      }
     };
 
-    if (showMenu) {
+    if (showMenu || showMoveDialog) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMenu]);
+  }, [showMenu, showMoveDialog]);
+
+  const handleRename = () => {
+    const newName = prompt(`Rename ${node.type}:`, node.name);
+    if (newName && newName.trim() && newName !== node.name) {
+      onRenameNode(node.id, node.type, newName.trim());
+    }
+    setShowMenu(false);
+  };
+
+  const handleMove = (targetFolderId: string | null) => {
+    onMoveNode(node.id, node.type, targetFolderId);
+    setShowMoveDialog(false);
+    setShowMenu(false);
+  };
 
   if (node.type === 'folder') {
     return (
@@ -291,6 +325,65 @@ function TreeItem({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleRename();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--gray-light)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      borderRadius: '4px',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Rename
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMoveDialog(true);
+                      setShowMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--gray-light)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      borderRadius: '4px',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Move
+                  </button>
+
+                  <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onDeleteNode(node.id, 'folder');
                       setShowMenu(false);
                     }}
@@ -318,6 +411,84 @@ function TreeItem({
                   </button>
                 </div>
               )}
+
+              {/* Move Dialog */}
+              {showMoveDialog && (
+                <div
+                  ref={moveDialogRef}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    background: '#1a1a1a',
+                    border: '1px solid rgba(64, 224, 208, 0.3)',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    minWidth: '200px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    zIndex: 1001,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                  }}
+                >
+                  <div style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--gray-med)', marginBottom: '4px' }}>
+                    Move to:
+                  </div>
+                  <button
+                    onClick={() => handleMove(null)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--gray-light)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      borderRadius: '4px',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Root
+                  </button>
+                  {allFolders.filter(f => f.id !== node.id).map(folder => (
+                    <button
+                      key={folder.id}
+                      onClick={() => handleMove(folder.id)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--gray-light)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '13px',
+                        borderRadius: '4px',
+                        textAlign: 'left',
+                        paddingLeft: `${(folder.level + 1) * 12 + 12}px`
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                      </svg>
+                      {folder.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -332,9 +503,12 @@ function TreeItem({
             onCreateFolder={onCreateFolder}
             onCreateMemory={onCreateMemory}
             onDeleteNode={onDeleteNode}
+            onRenameNode={onRenameNode}
+            onMoveNode={onMoveNode}
             selectedNodeId={selectedNodeId}
             hoveredNodeId={hoveredNodeId}
             setHoveredNodeId={setHoveredNodeId}
+            allFolders={allFolders}
           />
         ))}
       </>
@@ -406,11 +580,70 @@ function TreeItem({
                   border: '1px solid rgba(64, 224, 208, 0.3)',
                   borderRadius: '6px',
                   padding: '4px',
-                  minWidth: '140px',
+                  minWidth: '160px',
                   zIndex: 1000,
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
                 }}
               >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRename();
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--gray-light)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Rename
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMoveDialog(true);
+                    setShowMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--gray-light)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  Move
+                </button>
+
+                <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }} />
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -439,6 +672,84 @@ function TreeItem({
                   </svg>
                   Delete Memory
                 </button>
+              </div>
+            )}
+
+            {/* Move Dialog */}
+            {showMoveDialog && (
+              <div
+                ref={moveDialogRef}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '4px',
+                  background: '#1a1a1a',
+                  border: '1px solid rgba(64, 224, 208, 0.3)',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  minWidth: '200px',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  zIndex: 1001,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                }}
+              >
+                <div style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--gray-med)', marginBottom: '4px' }}>
+                  Move to:
+                </div>
+                <button
+                  onClick={() => handleMove(null)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--gray-light)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    borderRadius: '4px',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  Root
+                </button>
+                {allFolders.map(folder => (
+                  <button
+                    key={folder.id}
+                    onClick={() => handleMove(folder.id)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--gray-light)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      borderRadius: '4px',
+                      textAlign: 'left',
+                      paddingLeft: `${(folder.level + 1) * 12 + 12}px`
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(64, 224, 208, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                    </svg>
+                    {folder.name}
+                  </button>
+                ))}
               </div>
             )}
           </div>
