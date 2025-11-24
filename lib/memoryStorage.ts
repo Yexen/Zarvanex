@@ -360,6 +360,12 @@ class MemoryStorage {
   async getAllPersonalizationChunks(userId?: string): Promise<any[]> {
     if (!this.db) throw new Error('Database not initialized');
 
+    // Check if store exists (for backwards compatibility)
+    if (!this.db.objectStoreNames.contains(PERSONALIZATION_STORE)) {
+      console.warn('[MemoryStorage] Personalization store not found (database needs upgrade)');
+      return [];
+    }
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([PERSONALIZATION_STORE], 'readonly');
       const store = transaction.objectStore(PERSONALIZATION_STORE);
@@ -412,6 +418,12 @@ class MemoryStorage {
 
   async getEntityIndex(): Promise<any> {
     if (!this.db) throw new Error('Database not initialized');
+
+    // Check if store exists (for backwards compatibility)
+    if (!this.db.objectStoreNames.contains(ENTITY_INDEX_STORE)) {
+      console.warn('[MemoryStorage] Entity index store not found (database needs upgrade)');
+      return {};
+    }
 
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([ENTITY_INDEX_STORE], 'readonly');

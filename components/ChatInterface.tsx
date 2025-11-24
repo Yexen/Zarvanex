@@ -239,24 +239,28 @@ function ChatInterfaceInner() {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
         // Add smart search context (new intelligent search system)
-        const smartSearchEnabled = await isSmartSearchEnabled(user.id);
-        if (smartSearchEnabled) {
-          const smartSearchResult = await processMessageWithSmartSearch(
-            currentQuery,
-            user.id,
-            {
-              openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
-              openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+        try {
+          const smartSearchEnabled = await isSmartSearchEnabled(user.id);
+          if (smartSearchEnabled) {
+            const smartSearchResult = await processMessageWithSmartSearch(
+              currentQuery,
+              user.id,
+              {
+                openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+                openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+              }
+            );
+            if (smartSearchResult.systemPrompt) {
+              console.log('[SmartSearch] Adding context:', {
+                intent: smartSearchResult.intent,
+                chunks: smartSearchResult.totalChunks,
+                tokens: smartSearchResult.totalTokens,
+              });
+              systemPrompt += '\n\n' + smartSearchResult.systemPrompt;
             }
-          );
-          if (smartSearchResult.systemPrompt) {
-            console.log('[SmartSearch] Adding context:', {
-              intent: smartSearchResult.intent,
-              chunks: smartSearchResult.totalChunks,
-              tokens: smartSearchResult.totalTokens,
-            });
-            systemPrompt += '\n\n' + smartSearchResult.systemPrompt;
           }
+        } catch (smartSearchError) {
+          console.error('[SmartSearch] Error (non-critical, continuing):', smartSearchError);
         }
 
         // Add conversational memory
