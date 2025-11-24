@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { memoryStorage } from '@/lib/memoryStorage';
 import { hardMemorySupabase } from '@/lib/hardMemorySupabase';
@@ -39,6 +39,7 @@ export default function MemoryPanel() {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState<Memory[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize storage and load data
   useEffect(() => {
@@ -191,11 +192,17 @@ export default function MemoryPanel() {
     if (!name?.trim()) return;
 
     try {
-      await memoryStorage.saveFolder({
+      const folderData = {
         name: name.trim(),
         parentId: parentId || null,
         userId: user.id
-      });
+      };
+
+      if (isSupabaseAvailable()) {
+        await hardMemorySupabase.saveFolder(folderData);
+      } else {
+        await memoryStorage.saveFolder(folderData);
+      }
       await loadData();
     } catch (error) {
       console.error('Error creating folder:', error);
@@ -312,6 +319,219 @@ export default function MemoryPanel() {
       console.error('Error deleting node:', error);
     }
   }, [state.selectedFolderId, state.selectedMemoryId]);
+
+  const handleSplitMemory = useCallback(async (memory: Memory) => {
+    if (!user?.id) return;
+
+    const confirmed = confirm(
+      `Split "${memory.title}" into smaller sections?\n\n` +
+      `Current size: ${(memory.content.length / 1024).toFixed(1)} KB\n` +
+      `This will create multiple new memories and keep the original.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const sections = smartSplit(memory.content);
+
+      console.log(`Splitting memory into ${sections.length} sections...`);
+
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.saveMemory({
+            title: `${memory.title} - Part ${i + 1}: ${section.title}`,
+            content: section.content,
+            tags: [...memory.tags, 'split-from-large-file'],
+            folderId: memory.folderId,
+            userId: user.id,
+          });
+        } else {
+          await memoryStorage.saveMemory({
+            title: `${memory.title} - Part ${i + 1}: ${section.title}`,
+            content: section.content,
+            tags: [...memory.tags, 'split-from-large-file'],
+            folderId: memory.folderId,
+            userId: user.id,
+          });
+        }
+      }
+
+      alert(`✅ Successfully created ${sections.length} new memories!\n\nOriginal memory "${memory.title}" is still there.`);
+      await loadData();
+    } catch (error) {
+      console.error('Error splitting memory:', error);
+      alert('Error splitting memory. Check console for details.');
+    }
+  }, [user?.id]);
+
+  const smartSplit = (content: string): Array<{ title: string; content: string }> => {
+    const sections: Array<{ title: string; content: string }> = [];
+    const headerPattern = /===\s*([^=]+?)\s*===/g;
+    const matches = [...content.matchAll(headerPattern)];
+
+    if (matches.length > 0) {
+      for (let i = 0; i < matches.length; i++) {
+        const match = matches[i];
+        const title = match[1].trim();
+        const startIdx = match.index! + match[0].length;
+        const endIdx = matches[i + 1]?.index || content.length;
+        const sectionContent = content.slice(startIdx, endIdx).trim();
+
+        if (sectionContent.length > 100) {
+          if (sectionContent.length > 15000) {
+            const subSections = splitByParagraphs(sectionContent, 10000);
+            subSections.forEach((subContent, idx) => {
+              sections.push({
+                title: `${title} (${idx + 1})`,
+                content: subContent,
+              });
+            });
+          } else {
+            sections.push({ title, content: sectionContent });
+          }
+        }
+      }
+    } else {
+      const chunks = splitByParagraphs(content, 10000);
+      chunks.forEach((chunk, idx) => {
+        sections.push({
+          title: `Section ${idx + 1}`,
+          content: chunk,
+        });
+      });
+    }
+
+    return sections;
+  };
+
+  const splitByParagraphs = (text: string, maxSize: number): string[] => {
+    const paragraphs = text.split('\n\n');
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const para of paragraphs) {
+      if (currentChunk.length + para.length > maxSize) {
+        if (currentChunk) {
+          chunks.push(currentChunk.trim());
+          currentChunk = '';
+        }
+
+        if (para.length > maxSize) {
+          const sentences = para.split('. ');
+          for (const sentence of sentences) {
+            if (currentChunk.length + sentence.length > maxSize) {
+              if (currentChunk) {
+                chunks.push(currentChunk.trim());
+                currentChunk = '';
+              }
+            }
+            currentChunk += sentence + '. ';
+          }
+        } else {
+          currentChunk = para;
+        }
+      } else {
+        currentChunk += (currentChunk ? '\n\n' : '') + para;
+      }
+    }
+
+    if (currentChunk.trim()) {
+      chunks.push(currentChunk.trim());
+    }
+
+    return chunks;
+  };
+
+  const handleImportFiles = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !user?.id) return;
+
+    const filesArray = Array.from(files);
+    let imported = 0;
+
+    for (const file of filesArray) {
+      try {
+        const content = await extractFileContent(file);
+        if (!content) continue;
+
+        const memoryData = {
+          title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+          content,
+          tags: ['imported', `from-${file.type || 'file'}`],
+          folderId: state.selectedFolderId,
+          userId: user.id,
+        };
+
+        if (isSupabaseAvailable()) {
+          await hardMemorySupabase.saveMemory(memoryData);
+        } else {
+          await memoryStorage.saveMemory(memoryData);
+        }
+
+        imported++;
+      } catch (error) {
+        console.error(`Error importing ${file.name}:`, error);
+      }
+    }
+
+    alert(`✅ Successfully imported ${imported}/${filesArray.length} files!`);
+    await loadData();
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [user?.id, state.selectedFolderId]);
+
+  const extractFileContent = async (file: File): Promise<string | null> => {
+    const fileType = file.type;
+    const fileName = file.name.toLowerCase();
+
+    // Text files
+    if (fileType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+      return await file.text();
+    }
+
+    // HTML files
+    if (fileType.includes('html') || fileName.endsWith('.html')) {
+      const html = await file.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      return doc.body.textContent || doc.body.innerText || '';
+    }
+
+    // PDF files (using PDF.js if available)
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      try {
+        // Check if PDF.js is loaded
+        if (typeof window !== 'undefined' && (window as any).pdfjsLib) {
+          const pdfjsLib = (window as any).pdfjsLib;
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+          let fullText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += pageText + '\n\n';
+          }
+
+          return fullText.trim();
+        } else {
+          alert('PDF.js not loaded. Please refresh the page and try again.');
+          return null;
+        }
+      } catch (error) {
+        console.error('Error extracting PDF:', error);
+        return null;
+      }
+    }
+
+    alert(`Unsupported file type: ${file.type || fileName}`);
+    return null;
+  };
 
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -442,6 +662,37 @@ export default function MemoryPanel() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Memory
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.html,.pdf,text/*,application/pdf,text/html"
+            multiple
+            onChange={handleImportFiles}
+            style={{ display: 'none' }}
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(34, 197, 94, 0.1)',
+              color: '#22c55e',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Import
           </button>
 
           <button
@@ -577,6 +828,7 @@ export default function MemoryPanel() {
                 folders={folders}
                 onSave={handleSaveMemory}
                 onDelete={selectedMemory ? handleDeleteMemory : undefined}
+                onSplit={handleSplitMemory}
                 onClose={() => {
                   setSelectedMemory(null);
                   setIsCreatingMemory(false);

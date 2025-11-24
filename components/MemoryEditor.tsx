@@ -8,6 +8,7 @@ interface MemoryEditorProps {
   folders: Folder[];
   onSave: (memoryData: Partial<Memory>) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onSplit?: (memory: Memory) => Promise<void>;
   onClose: () => void;
   isCreating?: boolean;
   defaultFolderId?: string | null;
@@ -18,6 +19,7 @@ export default function MemoryEditor({
   folders,
   onSave,
   onDelete,
+  onSplit,
   onClose,
   isCreating = false,
   defaultFolderId = null
@@ -174,7 +176,26 @@ export default function MemoryEditor({
               Delete
             </button>
           )}
-          
+
+          {!isCreating && memory && onSplit && content.length > 20000 && (
+            <button
+              onClick={() => onSplit(memory)}
+              style={{
+                padding: '8px 12px',
+                background: 'rgba(251, 191, 36, 0.1)',
+                color: '#fbbf24',
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+              title={`Large memory (${(content.length / 1024).toFixed(1)} KB). Click to split into smaller sections.`}
+            >
+              Split Memory
+            </button>
+          )}
+
           <button
             onClick={onClose}
             style={{
@@ -388,12 +409,12 @@ export default function MemoryEditor({
 
         {/* Content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <label style={{ 
-            display: 'block', 
-            color: 'var(--gray-med)', 
-            fontSize: '14px', 
+          <label style={{
+            display: 'block',
+            color: 'var(--gray-med)',
+            fontSize: '14px',
             fontWeight: '500',
-            marginBottom: '8px' 
+            marginBottom: '8px'
           }}>
             Content
           </label>
@@ -416,6 +437,20 @@ export default function MemoryEditor({
               fontFamily: 'inherit'
             }}
           />
+          {/* Size indicator */}
+          <div style={{
+            marginTop: '8px',
+            fontSize: '12px',
+            color: content.length > 20000 ? '#fbbf24' : 'var(--gray-dark)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>{(content.length / 1024).toFixed(1)} KB</span>
+            {content.length > 20000 && (
+              <span style={{ color: '#fbbf24' }}>⚠️ Large file - consider splitting</span>
+            )}
+          </div>
         </div>
       </div>
 
