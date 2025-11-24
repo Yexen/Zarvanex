@@ -93,7 +93,9 @@ export async function getHardMemoryContext(
 
   } catch (error) {
     console.error('🚨 [Hard Memory] Error in getHardMemoryContext:', error);
-    console.error('🚨 [Hard Memory] Error details:', error.message, error.stack);
+    if (error instanceof Error) {
+      console.error('🚨 [Hard Memory] Error details:', error.message, error.stack);
+    }
     return {
       foundMemories: [],
       relevantCount: 0,
