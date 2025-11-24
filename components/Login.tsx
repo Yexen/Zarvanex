@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { debugGoogleAuth } from '@/lib/authDebug';
 
 export default function Login() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -208,6 +209,23 @@ export default function Login() {
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>
         </div>
+
+        {/* Debug Google OAuth */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={debugGoogleAuth}
+              className="text-xs px-3 py-1 rounded transition-colors"
+              style={{
+                color: 'var(--gray-light)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              🔍 Debug Google OAuth
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
