@@ -19,6 +19,60 @@ interface SaveMemoryRequest {
 /**
  * Retrieves Hard Memories for AI context injection
  */
+/**
+ * Detects if query is asking for specific factual information
+ */
+function isFactualQuery(query: string): boolean {
+  const factualPatterns = [
+    /what.*name/i,
+    /what.*called/i,
+    /name of/i,
+    /called\?/i,
+    /how many/i,
+    /what.*brand/i,
+    /which.*university/i,
+    /what.*city/i,
+    /what.*number/i,
+    /specific/i
+  ];
+  
+  return factualPatterns.some(pattern => pattern.test(query));
+}
+
+/**
+ * Performs exact keyword search across memories
+ */
+async function performKeywordSearch(userId: string, query: string): Promise<Memory[]> {
+  console.log('🧠 [Hard Memory] Performing keyword search for:', query);
+  
+  // Get all memories for exact text search
+  const allMemories = await hardMemorySupabase.getAllMemories(userId);
+  
+  // Extract potential keywords from query
+  const keywords = query.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2) // Skip very short words
+    .filter(word => !['what', 'the', 'and', 'are', 'you', 'how', 'many', 'called', 'name'].includes(word));
+  
+  console.log('🧠 [Hard Memory] Searching for keywords:', keywords);
+  
+  const matches = allMemories.filter(memory => {
+    const searchText = (memory.title + ' ' + memory.content).toLowerCase();
+    
+    // Check for exact phrase match first
+    if (searchText.includes(query.toLowerCase())) {
+      return true;
+    }
+    
+    // Check for keyword matches
+    return keywords.some(keyword => searchText.includes(keyword));
+  });
+  
+  console.log('🧠 [Hard Memory] Keyword search found:', matches.length, 'memories');
+  return matches;
+}
+
 export async function getHardMemoryContext(
   userId: string,
   currentQuery: string,
@@ -38,18 +92,53 @@ export async function getHardMemoryContext(
 
   try {
     let foundMemories: Memory[] = [];
+    const isFactual = isFactualQuery(currentQuery);
+    
+    console.log('🧠 [Hard Memory] Query classified as:', isFactual ? 'FACTUAL' : 'SEMANTIC');
 
-    // First, try semantic search with the query
     if (currentQuery.trim()) {
-      console.log('🧠 [Hard Memory] Searching with query:', currentQuery);
-      const searchResults = await hardMemorySupabase.searchMemories(
-        currentQuery,
-        searchTags,
-        userId
-      );
-      console.log('🧠 [Hard Memory] Search results:', searchResults.length, searchResults.map(m => ({ title: m.title, contentLength: m.content.length })));
-      // Take more search results to increase chance of finding relevant long content
-      foundMemories.push(...searchResults.slice(0, maxResults * 2));
+      if (isFactual) {
+        // For factual queries, prioritize exact keyword search
+        console.log('🧠 [Hard Memory] Using keyword search for factual query');
+        const keywordResults = await performKeywordSearch(userId, currentQuery);
+        foundMemories.push(...keywordResults);
+        
+        // If keyword search didn't find enough, supplement with semantic search
+        if (foundMemories.length < maxResults) {
+          console.log('🧠 [Hard Memory] Supplementing with semantic search');
+          const searchResults = await hardMemorySupabase.searchMemories(
+            currentQuery,
+            searchTags,
+            userId
+          );
+          
+          // Add semantic results that aren't already in keyword results
+          const foundIds = new Set(foundMemories.map(m => m.id));
+          const additionalResults = searchResults.filter(m => !foundIds.has(m.id));
+          foundMemories.push(...additionalResults);
+        }
+      } else {
+        // For conceptual queries, use semantic search first
+        console.log('🧠 [Hard Memory] Using semantic search for conceptual query');
+        const searchResults = await hardMemorySupabase.searchMemories(
+          currentQuery,
+          searchTags,
+          userId
+        );
+        foundMemories.push(...searchResults);
+        
+        // If semantic search didn't find enough, supplement with keyword search
+        if (foundMemories.length < maxResults) {
+          console.log('🧠 [Hard Memory] Supplementing with keyword search');
+          const keywordResults = await performKeywordSearch(userId, currentQuery);
+          
+          const foundIds = new Set(foundMemories.map(m => m.id));
+          const additionalResults = keywordResults.filter(m => !foundIds.has(m.id));
+          foundMemories.push(...additionalResults);
+        }
+      }
+      
+      console.log('🧠 [Hard Memory] Combined search results:', foundMemories.length, foundMemories.map(m => ({ title: m.title, contentLength: m.content.length })));
     } else {
       console.log('🧠 [Hard Memory] Empty query, skipping search');
     }
@@ -125,12 +214,37 @@ export function formatHardMemoryForPrompt(context: HardMemoryContext): string {
     parts.push(`\n**${index + 1}. ${memory.title}**${tags}`);
     parts.push(`*Created: ${date}*`);
     
-    // Include more content for better context, but limit for token efficiency
-    // For long content, prioritize the beginning and include key sections
+    // Smart content inclusion strategy
     let content = memory.content;
+    
+    // For factual queries, try to include sections that contain query keywords
+    const queryKeywords = context.searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const hasQueryKeywords = queryKeywords.some(keyword => 
+      content.toLowerCase().includes(keyword) || memory.title.toLowerCase().includes(keyword)
+    );
+    
     if (content.length > 1500) {
-      // For very long content, include first 1000 chars and last 300 chars
-      content = content.substring(0, 1000) + '\n\n[... content truncated ...]\n\n' + content.substring(content.length - 300);
+      if (hasQueryKeywords) {
+        // Find and include sections around query keywords
+        const lowerContent = content.toLowerCase();
+        const keywordPositions = queryKeywords.map(keyword => 
+          lowerContent.indexOf(keyword)
+        ).filter(pos => pos >= 0);
+        
+        if (keywordPositions.length > 0) {
+          // Include content around the first keyword match
+          const keywordPos = Math.min(...keywordPositions);
+          const start = Math.max(0, keywordPos - 400);
+          const end = Math.min(content.length, keywordPos + 800);
+          content = (start > 0 ? '... ' : '') + content.substring(start, end) + (end < content.length ? ' ...' : '');
+        } else {
+          // Fallback to beginning + end
+          content = content.substring(0, 1000) + '\n\n[... content truncated ...]\n\n' + content.substring(content.length - 300);
+        }
+      } else {
+        // For very long content without query keywords, include beginning + end
+        content = content.substring(0, 1000) + '\n\n[... content truncated ...]\n\n' + content.substring(content.length - 300);
+      }
     } else if (content.length > 800) {
       // For moderately long content, include first 600 chars
       content = content.substring(0, 600) + '...';
