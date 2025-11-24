@@ -1,5 +1,5 @@
 /**
- * Smart Keyword Extraction using Gemini
+ * Smart Keyword Extraction using xAI Grok
  * Extracts intent-aware search terms from user messages
  */
 
@@ -14,7 +14,7 @@ export interface ExtractedKeywords {
 }
 
 /**
- * Extract smart keywords from user message using Gemini
+ * Extract smart keywords from user message using xAI Grok
  */
 export async function extractSmartKeywords(
   message: string,
@@ -50,7 +50,7 @@ Return ONLY valid JSON with these exact keys. Use empty arrays if nothing found.
         'X-Title': 'Zarvanex',
       },
       body: JSON.stringify({
-        model: 'groq/llama-3.1-8b-instant',
+        model: 'x-ai/grok-2-1212',
         messages: [
           {
             role: 'user',
@@ -74,7 +74,7 @@ Return ONLY valid JSON with these exact keys. Use empty arrays if nothing found.
     try {
       const keywords = JSON.parse(content) as ExtractedKeywords;
 
-      console.log('[KeywordExtractor] Gemini response:', keywords);
+      console.log('[KeywordExtractor] Grok response:', keywords);
 
       // Validate structure and provide defaults
       return {
@@ -96,7 +96,7 @@ Return ONLY valid JSON with these exact keys. Use empty arrays if nothing found.
 }
 
 /**
- * Fallback keyword extraction using regex (when Gemini fails)
+ * Fallback keyword extraction using regex (when Grok fails)
  */
 function extractFallbackKeywords(message: string): ExtractedKeywords {
   const keywords: ExtractedKeywords = {

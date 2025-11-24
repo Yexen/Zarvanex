@@ -1,5 +1,5 @@
 /**
- * Intent Classification using Gemini
+ * Intent Classification using xAI Grok
  * Classifies user messages to determine optimal retrieval strategy
  */
 
@@ -12,7 +12,7 @@ export type IntentType =
   | 'TASK';        // Wanting help with something specific
 
 /**
- * Classify user message intent using free Gemini model
+ * Classify user message intent using xAI Grok model
  */
 export async function classifyIntent(
   message: string,
@@ -46,7 +46,7 @@ Respond with ONLY the category name (one word, uppercase).`;
         'X-Title': 'Zarvanex',
       },
       body: JSON.stringify({
-        model: 'groq/llama-3.1-8b-instant',
+        model: 'x-ai/grok-2-1212',
         messages: [
           {
             role: 'user',
@@ -66,7 +66,7 @@ Respond with ONLY the category name (one word, uppercase).`;
     const data = await response.json();
     const intent = data.choices[0]?.message?.content?.trim().toUpperCase() || 'CONCEPTUAL';
 
-    console.log('[IntentClassifier] Gemini response:', intent);
+    console.log('[IntentClassifier] Grok response:', intent);
 
     // Validate intent is one of the expected types
     const validIntents: IntentType[] = ['FACTUAL', 'NARRATIVE', 'CONCEPTUAL', 'RELATIONAL', 'EMOTIONAL', 'TASK'];
@@ -74,7 +74,7 @@ Respond with ONLY the category name (one word, uppercase).`;
       return intent as IntentType;
     }
 
-    console.warn('[IntentClassifier] Invalid intent from Gemini, using fallback:', intent);
+    console.warn('[IntentClassifier] Invalid intent from Grok, using fallback:', intent);
     return 'CONCEPTUAL'; // Default fallback
   } catch (error) {
     console.error('Error classifying intent:', error);
