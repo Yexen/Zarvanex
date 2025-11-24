@@ -33,40 +33,118 @@ function isFactualQuery(query: string): boolean {
     /which.*university/i,
     /what.*city/i,
     /what.*number/i,
-    /specific/i
+    /specific/i,
+    /who.*is/i,
+    /where.*from/i,
+    /what.*type/i,
+    /\b(solo|lilou|yexen|zarvânex|kazerun|tehran)\b/i, // Specific entities you mentioned
+    /\bdog\b/i,
+    /\bcat\b/i,
+    /\bpet\b/i,
+    /\buniversity\b/i,
+    /\bcity\b/i,
+    /\bbrand\b/i,
+    /\bcompany\b/i
   ];
   
-  return factualPatterns.some(pattern => pattern.test(query));
+  // Also check if query contains potential proper nouns (capitalized words)
+  const hasProperNouns = /\b[A-Z][a-z]+\b/.test(query);
+  const hasNumbers = /\d+/.test(query);
+  
+  return factualPatterns.some(pattern => pattern.test(query)) || hasProperNouns || hasNumbers;
 }
 
 /**
- * Performs exact keyword search across memories
+ * Extracts potential entities and proper nouns from query
+ */
+function extractEntities(query: string): string[] {
+  const entities = [];
+  
+  // Capitalized words (likely proper nouns)
+  const capitalizedWords = query.match(/\b[A-Z][a-z]+\b/g) || [];
+  entities.push(...capitalizedWords);
+  
+  // Words that look like names (common patterns)
+  const namePatterns = [
+    /\b[A-Z][a-z]{2,}\b/g, // Capitalized words 3+ chars
+    /\b[A-Z]{2,}\b/g, // All caps (acronyms, brands)
+    /\b\d+\b/g // Numbers
+  ];
+  
+  namePatterns.forEach(pattern => {
+    const matches = query.match(pattern) || [];
+    entities.push(...matches);
+  });
+  
+  // Remove duplicates and common words
+  const stopWords = ['What', 'The', 'And', 'Are', 'You', 'How', 'Many', 'Called', 'Name', 'My', 'Is'];
+  return [...new Set(entities)].filter(entity => !stopWords.includes(entity));
+}
+
+/**
+ * Enhanced keyword search with entity recognition
  */
 async function performKeywordSearch(userId: string, query: string): Promise<Memory[]> {
-  console.log('🧠 [Hard Memory] Performing keyword search for:', query);
+  console.log('🧠 [Hard Memory] Performing enhanced keyword search for:', query);
   
   // Get all memories for exact text search
   const allMemories = await hardMemorySupabase.getAllMemories(userId);
   
-  // Extract potential keywords from query
+  // Extract entities and keywords
+  const entities = extractEntities(query);
   const keywords = query.toLowerCase()
     .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
-    .filter(word => word.length > 2) // Skip very short words
-    .filter(word => !['what', 'the', 'and', 'are', 'you', 'how', 'many', 'called', 'name'].includes(word));
+    .filter(word => word.length > 1) // Include shorter words for names
+    .filter(word => !['what', 'the', 'and', 'are', 'you', 'how', 'many', 'called', 'name', 'my', 'is'].includes(word));
   
-  console.log('🧠 [Hard Memory] Searching for keywords:', keywords);
+  console.log('🧠 [Hard Memory] Extracted entities:', entities);
+  console.log('🧠 [Hard Memory] Extracted keywords:', keywords);
   
   const matches = allMemories.filter(memory => {
     const searchText = (memory.title + ' ' + memory.content).toLowerCase();
+    const originalText = memory.title + ' ' + memory.content; // Keep original casing for entity matching
     
-    // Check for exact phrase match first
-    if (searchText.includes(query.toLowerCase())) {
+    // Priority 1: Exact phrase match
+    if (searchText.includes(query.toLowerCase().trim())) {
+      console.log(`🎯 [Hard Memory] Exact phrase match in: ${memory.title}`);
       return true;
     }
     
-    // Check for keyword matches
-    return keywords.some(keyword => searchText.includes(keyword));
+    // Priority 2: Entity matches (case-sensitive for proper nouns)
+    const entityMatches = entities.some(entity => {
+      const found = originalText.includes(entity);
+      if (found) {
+        console.log(`🎯 [Hard Memory] Entity "${entity}" found in: ${memory.title}`);
+      }
+      return found;
+    });
+    if (entityMatches) return true;
+    
+    // Priority 3: Case-insensitive entity matches
+    const entityMatchesLower = entities.some(entity => {
+      const found = searchText.includes(entity.toLowerCase());
+      if (found) {
+        console.log(`🎯 [Hard Memory] Entity "${entity}" (lowercase) found in: ${memory.title}`);
+      }
+      return found;
+    });
+    if (entityMatchesLower) return true;
+    
+    // Priority 4: Multiple keyword matches
+    const keywordMatches = keywords.filter(keyword => searchText.includes(keyword));
+    if (keywordMatches.length >= Math.min(2, keywords.length)) {
+      console.log(`🎯 [Hard Memory] Multiple keywords [${keywordMatches.join(', ')}] found in: ${memory.title}`);
+      return true;
+    }
+    
+    // Priority 5: Single keyword match for short queries
+    if (keywords.length === 1 && searchText.includes(keywords[0])) {
+      console.log(`🎯 [Hard Memory] Single keyword "${keywords[0]}" found in: ${memory.title}`);
+      return true;
+    }
+    
+    return false;
   });
   
   console.log('🧠 [Hard Memory] Keyword search found:', matches.length, 'memories');
@@ -139,6 +217,21 @@ export async function getHardMemoryContext(
       }
       
       console.log('🧠 [Hard Memory] Combined search results:', foundMemories.length, foundMemories.map(m => ({ title: m.title, contentLength: m.content.length })));
+      
+      // Final fallback: If we still have no results for a factual query, do aggressive substring search
+      if (foundMemories.length === 0 && isFactual) {
+        console.log('🧠 [Hard Memory] No results found, trying aggressive fallback search');
+        const allMemories = await hardMemorySupabase.getAllMemories(userId);
+        const queryWords = currentQuery.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+        
+        const fallbackMatches = allMemories.filter(memory => {
+          const searchText = (memory.title + ' ' + memory.content).toLowerCase();
+          return queryWords.some(word => searchText.includes(word));
+        });
+        
+        console.log('🧠 [Hard Memory] Fallback search found:', fallbackMatches.length, 'memories');
+        foundMemories.push(...fallbackMatches);
+      }
     } else {
       console.log('🧠 [Hard Memory] Empty query, skipping search');
     }
