@@ -128,15 +128,15 @@ export class EntityExtractor {
     ];
     
     for (const pattern of patterns) {
-      let match;
+      let match: RegExpExecArray | null;
       while ((match = pattern.regex.exec(text)) !== null) {
         const entityText = match[0];
         const context = this.getContext(text, match.index, entityText.length, contextWindow);
         
         // Check if this overlaps with existing entities
         const overlaps = entities.some(e => 
-          (match.index >= e.startPos && match.index < e.endPos) ||
-          (match.index + entityText.length > e.startPos && match.index + entityText.length <= e.endPos)
+          (match!.index >= e.startPos && match!.index < e.endPos) ||
+          (match!.index + entityText.length > e.startPos && match!.index + entityText.length <= e.endPos)
         );
         
         if (!overlaps) {
@@ -145,8 +145,8 @@ export class EntityExtractor {
             type: pattern.type,
             context: context,
             confidence: 0.8,
-            startPos: match.index,
-            endPos: match.index + entityText.length
+            startPos: match!.index,
+            endPos: match!.index + entityText.length
           });
         }
       }
@@ -156,7 +156,7 @@ export class EntityExtractor {
   private extractCapitalizedEntities(text: string, entities: ExtractedEntity[], contextWindow: number) {
     // Extract standalone capitalized words that might be proper nouns
     const capitalizedRegex = /\b[A-Z][a-z]{2,}\b/g;
-    let match;
+    let match: RegExpExecArray | null;
     
     while ((match = capitalizedRegex.exec(text)) !== null) {
       const entityText = match[0];
@@ -168,18 +168,18 @@ export class EntityExtractor {
       // Check if already extracted
       const alreadyExists = entities.some(e => 
         e.text.toLowerCase() === entityText.toLowerCase() ||
-        (match.index >= e.startPos && match.index < e.endPos)
+        (match!.index >= e.startPos && match!.index < e.endPos)
       );
       
       if (!alreadyExists) {
-        const context = this.getContext(text, match.index, entityText.length, contextWindow);
+        const context = this.getContext(text, match!.index, entityText.length, contextWindow);
         entities.push({
           text: entityText,
           type: 'UNKNOWN',
           context: context,
           confidence: 0.6, // Lower confidence for unknown proper nouns
-          startPos: match.index,
-          endPos: match.index + entityText.length
+          startPos: match!.index,
+          endPos: match!.index + entityText.length
         });
       }
     }
@@ -188,18 +188,18 @@ export class EntityExtractor {
   private extractNumbers(text: string, entities: ExtractedEntity[], contextWindow: number) {
     // Extract significant numbers (not years, not single digits in most contexts)
     const numberRegex = /\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b/g;
-    let match;
+    let match: RegExpExecArray | null;
     
     while ((match = numberRegex.exec(text)) !== null) {
       const entityText = match[0];
       
       // Skip if already covered
       const overlaps = entities.some(e => 
-        match.index >= e.startPos && match.index < e.endPos
+        match!.index >= e.startPos && match!.index < e.endPos
       );
       
       if (!overlaps) {
-        const context = this.getContext(text, match.index, entityText.length, contextWindow);
+        const context = this.getContext(text, match!.index, entityText.length, contextWindow);
         
         // Higher confidence for numbers in certain contexts
         let confidence = 0.5;
@@ -214,8 +214,8 @@ export class EntityExtractor {
           type: 'NUMBER',
           context: context,
           confidence: confidence,
-          startPos: match.index,
-          endPos: match.index + entityText.length
+          startPos: match!.index,
+          endPos: match!.index + entityText.length
         });
       }
     }
