@@ -23,7 +23,7 @@ import { generateSystemPrompt, formatUserContext, shouldIncludePersonalization }
 import { getConversationMemory, formatMemoryForPrompt } from '@/lib/memory';
 import { getHardMemoryContext, formatHardMemoryForPrompt } from '@/lib/hardMemoryAI';
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
-import { processMessageWithSmartSearch, isSmartSearchEnabled } from '@/lib/smartSearch';
+import { smartHardMemorySearch } from '@/lib/smartHardMemorySearch';
 
 function ChatInterfaceInner() {
   const router = useRouter();
@@ -238,29 +238,44 @@ function ChatInterfaceInner() {
     if (user?.id && messages.length > 0) {
       const currentQuery = messages[messages.length - 1]?.content || '';
       try {
-        // Add smart search context (new intelligent search system)
+        // Add smart hard memory search (intelligent retrieval from Supabase)
         try {
-          const smartSearchEnabled = await isSmartSearchEnabled(user.id);
-          if (smartSearchEnabled) {
-            const smartSearchResult = await processMessageWithSmartSearch(
-              currentQuery,
-              user.id,
-              {
-                openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
-                openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-              }
-            );
-            if (smartSearchResult.systemPrompt) {
-              console.log('[SmartSearch] Adding context:', {
-                intent: smartSearchResult.intent,
-                chunks: smartSearchResult.totalChunks,
-                tokens: smartSearchResult.totalTokens,
-              });
-              systemPrompt += '\n\n' + smartSearchResult.systemPrompt;
+          const smartMemoryResult = await smartHardMemorySearch(
+            currentQuery,
+            user.id,
+            {
+              openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+            }
+          );
+
+          if (smartMemoryResult.memories.length > 0) {
+            console.log('[SmartHardMemory] Found memories:', {
+              intent: smartMemoryResult.intent,
+              count: smartMemoryResult.memories.length,
+              totalMatches: smartMemoryResult.totalMatches,
+            });
+
+            // Format memories for prompt
+            const memoryPrompt = formatHardMemoryForPrompt({
+              foundMemories: smartMemoryResult.memories,
+              relevantCount: smartMemoryResult.totalMatches,
+              searchQuery: currentQuery,
+              tags: [],
+            });
+
+            if (memoryPrompt) {
+              systemPrompt += memoryPrompt;
             }
           }
-        } catch (smartSearchError) {
-          console.error('[SmartSearch] Error (non-critical, continuing):', smartSearchError);
+        } catch (smartMemoryError) {
+          console.error('[SmartHardMemory] Error (non-critical, using fallback):', smartMemoryError);
+
+          // Fallback to original hard memory search
+          const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
+          const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
+          if (hardMemoryPrompt) {
+            systemPrompt += hardMemoryPrompt;
+          }
         }
 
         // Add conversational memory
@@ -268,13 +283,6 @@ function ChatInterfaceInner() {
         const memoryPrompt = formatMemoryForPrompt(memoryContext, preferences);
         if (memoryPrompt) {
           systemPrompt += memoryPrompt;
-        }
-
-        // Add hard memory context
-        const hardMemoryContext = await getHardMemoryContext(user.id, currentQuery);
-        const hardMemoryPrompt = formatHardMemoryForPrompt(hardMemoryContext);
-        if (hardMemoryPrompt) {
-          systemPrompt += hardMemoryPrompt;
         }
       } catch (error) {
         console.error('🚨 Error fetching memory context:', error);
