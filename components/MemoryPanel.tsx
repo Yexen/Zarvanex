@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { memoryStorage } from '@/lib/memoryStorage';
 import { hardMemorySupabase } from '@/lib/hardMemorySupabase';
+import { invalidateCacheForChunk, invalidateAllCache } from '@/lib/smartSearch';
 import FolderTree from './FolderTree';
 import MemoryEditor from './MemoryEditor';
 import type { MemoryView, MemoryPanelState, Memory, Folder, TreeNode } from '@/types/memory';
@@ -222,16 +223,19 @@ export default function MemoryPanel() {
   const handleSaveMemory = useCallback(async (memoryData: Partial<Memory>) => {
     if (!user?.id) return;
 
-    console.log('🧠 [MemoryPanel] Saving memory:', { 
-      memoryData, 
-      userId: user.id, 
+    console.log('🧠 [MemoryPanel] Saving memory:', {
+      memoryData,
+      userId: user.id,
       selectedFolderId: state.selectedFolderId,
       usingSupabase: isSupabaseAvailable()
     });
 
     try {
+      let memoryId: string | undefined;
+
       if (selectedMemory) {
         // Update existing memory
+        memoryId = selectedMemory.id;
         if (isSupabaseAvailable()) {
           console.log('🧠 [MemoryPanel] Updating memory via Supabase');
           await hardMemorySupabase.updateMemory(selectedMemory.id, memoryData);
@@ -246,18 +250,26 @@ export default function MemoryPanel() {
           userId: user.id,
           folderId: memoryData.folderId || state.selectedFolderId
         } as Omit<Memory, 'id' | 'createdAt' | 'lastAccessed' | 'lastModified'>;
-        
+
         console.log('🧠 [MemoryPanel] Creating memory with data:', newMemoryData);
-        
+
         if (isSupabaseAvailable()) {
           console.log('🧠 [MemoryPanel] Creating memory via Supabase');
           const result = await hardMemorySupabase.saveMemory(newMemoryData);
+          memoryId = result.id;
           console.log('🧠 [MemoryPanel] Supabase save result:', result);
         } else {
           console.log('🧠 [MemoryPanel] Creating memory via IndexedDB');
-          await memoryStorage.saveMemory(newMemoryData);
+          const result = await memoryStorage.saveMemory(newMemoryData);
+          memoryId = result.id;
         }
       }
+
+      // Invalidate cache for this memory
+      if (memoryId) {
+        await invalidateCacheForChunk(memoryId);
+      }
+
       await loadData();
     } catch (error) {
       console.error('🚨 [MemoryPanel] Error saving memory:', error);
@@ -268,11 +280,17 @@ export default function MemoryPanel() {
     if (!selectedMemory) return;
 
     try {
+      const memoryId = selectedMemory.id;
+
       if (isSupabaseAvailable()) {
         await hardMemorySupabase.deleteMemory(selectedMemory.id);
       } else {
         await memoryStorage.deleteMemory(selectedMemory.id);
       }
+
+      // Invalidate cache for this memory
+      await invalidateCacheForChunk(memoryId);
+
       setSelectedMemory(null);
       setState(prev => ({ ...prev, selectedMemoryId: null }));
       setIsCreatingMemory(false);
@@ -296,12 +314,16 @@ export default function MemoryPanel() {
         } else {
           await memoryStorage.deleteFolder(nodeId);
         }
+        // Folder deletion may affect multiple memories, invalidate all
+        await invalidateAllCache();
       } else {
         if (isSupabaseAvailable()) {
           await hardMemorySupabase.deleteMemory(nodeId);
         } else {
           await memoryStorage.deleteMemory(nodeId);
         }
+        // Invalidate cache for this specific memory
+        await invalidateCacheForChunk(nodeId);
       }
 
       // Clear selection if we deleted the selected item
@@ -329,12 +351,15 @@ export default function MemoryPanel() {
         } else {
           await memoryStorage.updateFolder(nodeId, { name: newName });
         }
+        // Folder rename doesn't affect content, no cache invalidation needed
       } else {
         if (isSupabaseAvailable()) {
           await hardMemorySupabase.updateMemory(nodeId, { title: newName });
         } else {
           await memoryStorage.updateMemory(nodeId, { title: newName });
         }
+        // Title change may affect search, invalidate cache for this memory
+        await invalidateCacheForChunk(nodeId);
       }
 
       await loadData();
@@ -352,12 +377,14 @@ export default function MemoryPanel() {
         } else {
           await memoryStorage.updateFolder(nodeId, { parentId: targetFolderId });
         }
+        // Folder move doesn't affect content, no cache invalidation needed
       } else {
         if (isSupabaseAvailable()) {
           await hardMemorySupabase.updateMemory(nodeId, { folderId: targetFolderId });
         } else {
           await memoryStorage.updateMemory(nodeId, { folderId: targetFolderId });
         }
+        // Moving memory doesn't affect its content, no cache invalidation needed
       }
 
       await loadData();

@@ -6,6 +6,7 @@
 import { buildEntityIndex, type EntityIndex } from './entityIndexer';
 import { getBatchEmbeddings } from './embeddingService';
 import { memoryStorage } from './memoryStorage';
+import { invalidateAllCache } from './smartSearch';
 import type { PersonalizationChunk } from './hybridSearcher';
 
 interface IndexingProgress {
@@ -136,6 +137,10 @@ export async function indexPersonalizationText(
     }
 
     console.log('[PersonalizationIndexer] Indexing complete!');
+
+    // Invalidate all cache since personalization data changed
+    await invalidateAllCache();
+    console.log('[PersonalizationIndexer] Cache invalidated');
 
     return {
       chunksCreated: chunksWithEntities.length,
