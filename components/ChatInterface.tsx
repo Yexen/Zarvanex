@@ -247,6 +247,7 @@ function ChatInterfaceInner() {
             user.id,
             {
               openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+              openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
             }
           );
 
@@ -382,6 +383,7 @@ function ChatInterfaceInner() {
             user.id,
             {
               openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+              openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
             }
           );
 
@@ -511,6 +513,7 @@ function ChatInterfaceInner() {
             user.id,
             {
               openrouter: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+              openai: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
             }
           );
 

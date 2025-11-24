@@ -1,11 +1,14 @@
 /**
  * Smart Hard Memory Search - Works with existing Supabase memories
  * Applies smart search techniques to existing hard memory system
+ * Now with 3-tier semantic caching for faster responses
  */
 
 import { classifyIntent, type IntentType } from './intentClassifier';
 import { extractSmartKeywords, type ExtractedKeywords } from './keywordExtractor';
 import { hardMemorySupabase } from './hardMemorySupabase';
+import { hardMemoryCache } from './cache/hardMemoryCache';
+import { getEmbedding } from './embeddingService';
 import type { Memory } from '@/types/memory';
 
 export interface SmartHardMemoryResult {
@@ -13,6 +16,8 @@ export interface SmartHardMemoryResult {
   intent: IntentType;
   keywords: ExtractedKeywords;
   totalMatches: number;
+  fromCache?: boolean;
+  cacheTier?: number;
   debug: {
     intentClassification: string;
     keywordsExtracted: ExtractedKeywords;
@@ -26,17 +31,53 @@ export interface SmartHardMemoryResult {
 
 /**
  * Perform smart search on existing Supabase hard memories
+ * Now with 3-tier semantic caching
  */
 export async function smartHardMemorySearch(
   userMessage: string,
   userId: string,
   apiKeys: {
     openrouter?: string;
+    openai?: string;
   }
 ): Promise<SmartHardMemoryResult> {
   console.log('[SmartHardMemory] Processing query:', userMessage);
 
   try {
+    // Initialize cache
+    if (!hardMemoryCache.initialized) {
+      await hardMemoryCache.initialize();
+    }
+
+    // EARLY STEP: Generate query embedding for cache lookup (if OpenAI available)
+    let queryEmbedding: number[] | null = null;
+    if (apiKeys.openai) {
+      try {
+        queryEmbedding = await getEmbedding(userMessage, apiKeys.openai);
+        console.log('[SmartHardMemory] Query embedding generated for cache');
+      } catch (error) {
+        console.warn('[SmartHardMemory] Failed to generate embedding:', error);
+      }
+    }
+
+    // CACHE CHECK FIRST
+    const cacheResult = await hardMemoryCache.lookup(
+      userMessage,
+      userId,
+      queryEmbedding || undefined
+    );
+
+    if (cacheResult.hit && cacheResult.entry) {
+      console.log(`[SmartHardMemory] ✅ CACHE HIT! Tier ${cacheResult.tier} - Returning cached result`);
+      return {
+        ...cacheResult.entry.result,
+        fromCache: true,
+        cacheTier: cacheResult.tier,
+      };
+    }
+
+    console.log('[SmartHardMemory] ❌ Cache miss - Running full search');
+
     // STEP 1 & 2: Classify Intent and Extract Keywords in PARALLEL
     const [intent, keywords] = apiKeys.openrouter
       ? await Promise.all([
@@ -89,11 +130,12 @@ export async function smartHardMemorySearch(
     const limit = intent === 'FACTUAL' ? 3 : intent === 'NARRATIVE' ? 5 : 4;
     const topMemories = rankedMemories.slice(0, limit);
 
-    return {
+    const result: SmartHardMemoryResult = {
       memories: topMemories,
       intent,
       keywords,
       totalMatches: rankedMemories.length,
+      fromCache: false,
       debug: {
         intentClassification: intent,
         keywordsExtracted: keywords,
@@ -104,6 +146,23 @@ export async function smartHardMemorySearch(
         },
       },
     };
+
+    // CACHE THE RESULTS for future use
+    try {
+      await hardMemoryCache.store(
+        userMessage,
+        userId,
+        queryEmbedding,
+        intent,
+        result
+      );
+      console.log('[SmartHardMemory] ✅ Results cached for future use');
+    } catch (cacheError) {
+      console.error('[SmartHardMemory] Failed to cache results:', cacheError);
+      // Don't fail the request if caching fails
+    }
+
+    return result;
   } catch (error) {
     console.error('[SmartHardMemory] Error:', error);
 
