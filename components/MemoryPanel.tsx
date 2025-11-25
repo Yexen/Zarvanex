@@ -629,7 +629,7 @@ export default function MemoryPanel() {
       let imported = 0;
       let failed = 0;
 
-      // First pass: Create folder memories for all directories
+      // First pass: Create Folder objects for all directories
       const entries = Object.keys(zipContent.files);
       const folders = entries.filter(path => zipContent.files[path].dir).sort();
 
@@ -644,23 +644,21 @@ export default function MemoryPanel() {
         const parentId = parentPath ? folderPathToId[parentPath + '/'] : state.selectedFolderId;
 
         try {
-          const memoryData = {
-            title: folderName,
-            content: `📁 Folder imported from ZIP: ${folderPath}`,
-            tags: ['imported-folder', 'from-zip'],
-            folderId: parentId,
+          const folderData = {
+            name: folderName,
+            parentId: parentId,
             userId: user.id,
           };
 
-          let savedMemory;
+          let savedFolder;
           if (isSupabaseAvailable()) {
-            savedMemory = await hardMemorySupabase.saveMemory(memoryData);
+            savedFolder = await hardMemorySupabase.saveFolder(folderData);
           } else {
-            savedMemory = await memoryStorage.saveMemory(memoryData);
+            savedFolder = await memoryStorage.saveFolder(folderData);
           }
 
-          // Store folder memory ID for children to reference
-          folderPathToId[folderPath] = savedMemory.id;
+          // Store folder ID for children to reference
+          folderPathToId[folderPath] = savedFolder.id;
           imported++;
         } catch (error) {
           console.error(`Error creating folder ${folderPath}:`, error);
