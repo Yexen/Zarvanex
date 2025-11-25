@@ -53,7 +53,7 @@ export async function sendPuterMessage(
 
   // Add system prompt if provided
   if (systemPrompt) {
-    formattedMessages.unshift({
+    (formattedMessages as any).unshift({
       role: 'system',
       content: systemPrompt
     });
