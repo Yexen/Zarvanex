@@ -112,8 +112,28 @@ export async function sendPuterMessage(
           for await (const chunk of stream) {
             console.log(`Chunk ${chunkCount++}:`, typeof chunk, chunk);
 
-            // Chunk might be a string or an object with content
-            const content = typeof chunk === 'string' ? chunk : (chunk?.content || JSON.stringify(chunk));
+            let content = '';
+
+            // Puter sends chunks as objects with type and text fields
+            if (typeof chunk === 'object' && chunk !== null) {
+              // Handle {type: "text", text: "..."} format
+              if (chunk.type === 'text' && chunk.text) {
+                content = chunk.text;
+              }
+              // Handle {content: "..."} format
+              else if (chunk.content) {
+                content = chunk.content;
+              }
+              // Skip extra_content chunks (metadata like thought_signature)
+              else if (chunk.type === 'extra_content') {
+                console.log('Skipping extra_content chunk');
+                continue;
+              }
+            }
+            // Handle plain string chunks
+            else if (typeof chunk === 'string') {
+              content = chunk;
+            }
 
             if (content) {
               fullResponse += content;
