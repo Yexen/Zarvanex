@@ -28,8 +28,27 @@ export async function sendPuterMessage(
   systemPrompt?: string
 ): Promise<string> {
   // Check if puter is available
-  if (typeof window === 'undefined' || !window.puter) {
-    throw new Error('Puter.js is not loaded');
+  if (typeof window === 'undefined') {
+    throw new Error('Window is not defined - running on server side?');
+  }
+
+  if (!window.puter) {
+    throw new Error('Puter.js is not loaded. Please refresh the page and wait for Puter.js to load.');
+  }
+
+  if (!window.puter.ai) {
+    throw new Error('Puter.ai is not available. The Puter SDK may not be fully initialized.');
+  }
+
+  // Check if user is signed in
+  try {
+    const isSignedIn = await window.puter.auth.isSignedIn();
+    if (!isSignedIn) {
+      throw new Error('You are not signed in to Puter. Please sign in at puter.com first.');
+    }
+  } catch (authError) {
+    console.error('Auth check error:', authError);
+    throw new Error('Could not verify Puter authentication: ' + (authError as Error).message);
   }
 
   // Convert messages to Puter format
@@ -99,9 +118,31 @@ export async function sendPuterMessage(
   } catch (error) {
     console.error('Puter AI error details:', error);
     console.error('Model ID that failed:', modelId);
-    console.error('Error message:', (error as Error).message);
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    throw error;
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+
+    try {
+      console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    } catch (jsonError) {
+      console.error('Could not stringify error');
+    }
+
+    // Create a more detailed error message
+    let errorMessage = 'Puter API call failed. ';
+    if (error instanceof Error) {
+      errorMessage += error.message;
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage += JSON.stringify(error);
+    } else {
+      errorMessage += String(error);
+    }
+
+    throw new Error(errorMessage);
   }
 }
 
