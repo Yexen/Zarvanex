@@ -200,4 +200,13 @@ export const OPENROUTER_MODELS = [
     supportsVision: false,
     isFree: true,
   },
+  {
+    id: 'qwen/qwen2.5-vl-72b-instruct:free',
+    name: 'Qwen 2.5 VL 72B Instruct (Free)',
+    description: 'Large vision-language model with multimodal understanding',
+    contextWindow: 32768,
+    hasThinkingMode: false,
+    supportsVision: true,
+    isFree: true,
+  },
 ];
