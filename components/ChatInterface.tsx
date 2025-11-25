@@ -967,6 +967,10 @@ function ChatInterfaceInner() {
       }
 
       console.log('Response received');
+      console.log('Response type:', typeof response);
+      console.log('Response length:', response?.length);
+      console.log('Response content:', response);
+      console.log('Streaming content:', streamingContent);
 
       // Calculate performance metrics
       const endTime = Date.now();
@@ -990,7 +994,11 @@ function ChatInterfaceInner() {
         },
       };
 
+      console.log('Assistant message to be saved:', assistantMessage);
+      console.log('Assistant message content length:', assistantMessage.content?.length);
+
       await addMessage(conversationId, assistantMessage);
+      console.log('Assistant message saved to database');
 
       // Trigger memory extraction after message exchange
       const fullConversation = [...allMessages, assistantMessage];
