@@ -42,8 +42,8 @@ export async function sendOpenRouterMessage(
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://zarvanex.app', // Optional: for rankings
-        'X-Title': 'Zarvanex', // Optional: shows in rankings
+        'HTTP-Referer': 'https://zurvanex.app', // Optional: for rankings
+        'X-Title': 'Zurvanex', // Optional: shows in rankings
       },
       body: JSON.stringify({
         model: modelId,

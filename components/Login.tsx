@@ -73,9 +73,9 @@ export default function Login() {
       }}>
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <img src="/Logo.png" alt="Zarvânex Logo" className="w-20 h-20 mx-auto mb-4" />
+          <img src="/Logo.png" alt="Zurvânex Logo" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-3xl font-bold" style={{ color: 'var(--gray-med)' }}>
-            Zarvânex
+            Zurvânex
           </h1>
           <p className="text-sm mt-2" style={{ color: 'var(--gray-light)' }}>
             {isSignUp ? 'Create your account' : 'Sign in to continue'}

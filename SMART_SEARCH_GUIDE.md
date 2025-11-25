@@ -32,7 +32,7 @@ My partner Adrien is autistic...
 My cat Lilou is 13 years old...
 
 === PROJECTS ===
-I'm working on Zarvanex, an AI chat application...
+I'm working on Zurvanex, an AI chat application...
 I created Yexen, a jewelry brand...
 
 === EDUCATION ===
@@ -147,7 +147,7 @@ Once indexed, the smart search automatically runs on every message in ChatInterf
 ```
 1. Intent: CONCEPTUAL
 2. Keywords: { concepts: ["creative", "projects"] }
-3. Semantic Match: Finds Yexen (jewelry), Zarvanex (AI), etc.
+3. Semantic Match: Finds Yexen (jewelry), Zurvanex (AI), etc.
 4. Ranked by Relevance: Top creative work descriptions
 ```
 
@@ -217,7 +217,7 @@ interface Entity {
 ```
 
 Stored in IndexedDB:
-- `zarvanex-memories` database
+- `zurvanex-memories` database
 - `personalization` store (chunks)
 - `entityIndex` store (entities)
 

@@ -61,8 +61,8 @@ Examples:
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://zarvanex.app',
-        'X-Title': 'Zarvanex',
+        'HTTP-Referer': 'https://zurvanex.app',
+        'X-Title': 'Zurvanex',
       },
       body: JSON.stringify({
         model: 'x-ai/grok-4.1-fast:free',

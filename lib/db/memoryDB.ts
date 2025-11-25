@@ -15,7 +15,7 @@ export interface Memory {
 }
 
 export class MemoryDB {
-  private dbName = 'zarvanex-memory';
+  private dbName = 'zurvanex-memory';
   private version = 1;
   private db: IDBDatabase | null = null;
 

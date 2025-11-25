@@ -1,14 +1,14 @@
-# Zarvanex - Complete System Documentation
+# Zurvanex - Complete System Documentation
 
 ## Overview
 
-**Zarvanex** (Neural Time Interface) is a sophisticated personal AI chat application that provides unified access to multiple AI providers and models while maintaining intelligent, personalized memory of your interactions. Built with Next.js 15, TypeScript, and Supabase, Zarvanex combines cutting-edge AI capabilities with advanced memory systems to deliver truly personalized conversational experiences.
+**Zurvanex** (Neural Time Interface) is a sophisticated personal AI chat application that provides unified access to multiple AI providers and models while maintaining intelligent, personalized memory of your interactions. Built with Next.js 15, TypeScript, and Supabase, Zurvanex combines cutting-edge AI capabilities with advanced memory systems to deliver truly personalized conversational experiences.
 
 ---
 
 ## Core Philosophy
 
-Zarvanex is designed around three key principles:
+Zurvanex is designed around three key principles:
 
 1. **Provider Agnostic**: Seamlessly switch between local models (Ollama) and cloud providers (OpenRouter, Groq, OpenAI, Anthropic, Cohere)
 2. **Intelligent Memory**: Advanced multi-layered memory system that understands context, entities, and relationships
@@ -47,7 +47,7 @@ Zarvanex is designed around three key principles:
 
 ### 🧠 Advanced Memory Systems
 
-Zarvanex implements two complementary memory systems working in harmony:
+Zurvanex implements two complementary memory systems working in harmony:
 
 #### 1. Hard Memory System (Supabase-Based)
 
@@ -491,7 +491,7 @@ Any model from Ollama's library:
 ## Project Structure
 
 ```
-Zarvanex/
+Zurvanex/
 ├── app/                          # Next.js App Router
 │   ├── api/                      # API routes
 │   │   └── chat/                 # Chat endpoints
@@ -731,8 +731,8 @@ CREATE POLICY "Users can only access own folders"
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/Yexen/Zarvanex.git
-cd Zarvanex
+git clone https://github.com/Yexen/Zurvanex.git
+cd Zurvanex
 ```
 
 2. **Install dependencies**
@@ -785,7 +785,7 @@ ollama pull llama3.3
 ollama serve
 ```
 
-Models will automatically appear in Zarvanex when Ollama is running.
+Models will automatically appear in Zurvanex when Ollama is running.
 
 ---
 
@@ -795,7 +795,7 @@ Models will automatically appear in Zarvanex when Ollama is running.
 
 1. **Connect GitHub repository**
    - Import project in Vercel dashboard
-   - Select Zarvanex repository
+   - Select Zurvanex repository
 
 2. **Configure environment variables**
    - Add all variables from `.env.local`
@@ -805,7 +805,7 @@ Models will automatically appear in Zarvanex when Ollama is running.
    - Automatic deployments on git push
    - Preview deployments for PRs
 
-**Production URL**: https://zarvanex.vercel.app/
+**Production URL**: https://zurvanex.vercel.app/
 
 ### Firebase (Alternative)
 
@@ -1048,7 +1048,7 @@ Deploys to Firebase Hosting (requires `firebase.json` configuration).
 
 ## Contributing
 
-Zarvanex is a personal project but contributions are welcome!
+Zurvanex is a personal project but contributions are welcome!
 
 ### Development Setup
 
@@ -1073,8 +1073,8 @@ Zarvanex is a personal project but contributions are welcome!
 ## Resources & Links
 
 **Project**
-- GitHub: https://github.com/Yexen/Zarvanex
-- Live Demo: https://zarvanex.vercel.app/
+- GitHub: https://github.com/Yexen/Zurvanex
+- Live Demo: https://zurvanex.vercel.app/
 - Documentation: This file
 
 **Services**

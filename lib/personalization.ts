@@ -3,7 +3,7 @@ import type { UserPreferences } from '@/types';
 export function generateSystemPrompt(preferences: UserPreferences | null): string {
   if (!preferences) {
     console.log('[DEBUG] No preferences found, using default system prompt');
-    return "You are Zarvânex, a helpful AI assistant. Be friendly, informative, and engaging in your responses.";
+    return "You are Zurvânex, a helpful AI assistant. Be friendly, informative, and engaging in your responses.";
   }
 
   console.log('[DEBUG] Generating system prompt with preferences:', {
@@ -15,7 +15,7 @@ export function generateSystemPrompt(preferences: UserPreferences | null): strin
   });
 
   const parts: string[] = [
-    "You are Zarvânex, a helpful AI assistant."
+    "You are Zurvânex, a helpful AI assistant."
   ];
 
   // Basic identity information

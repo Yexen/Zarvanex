@@ -234,7 +234,7 @@ function ChatInterfaceInner() {
 
     let systemPrompt = shouldIncludePersonalization(preferences)
       ? generateSystemPrompt(preferences)
-      : "You are Zarvânex, a helpful AI assistant.";
+      : "You are Zurvânex, a helpful AI assistant.";
 
     // Add conversation memory context if user is available
     if (user?.id && messages.length > 0) {
@@ -370,7 +370,7 @@ function ChatInterfaceInner() {
 
     let systemPrompt = shouldIncludePersonalization(preferences)
       ? generateSystemPrompt(preferences)
-      : "You are Zarvânex, a helpful AI assistant.";
+      : "You are Zurvânex, a helpful AI assistant.";
 
     // Add conversation memory context if user is available
     if (user?.id && messages.length > 0) {
@@ -500,7 +500,7 @@ function ChatInterfaceInner() {
     // Generate system prompt from user preferences
     let systemPrompt = shouldIncludePersonalization(preferences)
       ? generateSystemPrompt(preferences)
-      : "You are Zarvânex, a helpful AI assistant.";
+      : "You are Zurvânex, a helpful AI assistant.";
 
     // Add conversation memory context if user is available
     if (user?.id && messages.length > 0) {
@@ -630,7 +630,7 @@ function ChatInterfaceInner() {
     // Generate system prompt from user preferences
     let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : "You are Zarvânex, a helpful AI assistant.";
+      : "You are Zurvânex, a helpful AI assistant.";
 
     // Add conversation memory context if user is available
     if (user?.id && messages.length > 0) {
@@ -726,7 +726,7 @@ function ChatInterfaceInner() {
     // Generate system prompt from user preferences
     let systemPrompt = shouldIncludePersonalization(preferences) 
       ? generateSystemPrompt(preferences)
-      : "You are Zarvânex, a helpful AI assistant.";
+      : "You are Zurvânex, a helpful AI assistant.";
 
     // Add conversation memory context if user is available
     if (user?.id && messages.length > 0) {
@@ -1195,7 +1195,7 @@ function ChatInterfaceInner() {
     return (
       <div className="flex items-center justify-center h-screen bg-[var(--bg-dark)]">
         <div className="flex flex-col items-center gap-4">
-          <img src="/Logo.png" alt="Zarvânex Logo" style={{ width: '120px', height: '120px' }} />
+          <img src="/Logo.png" alt="Zurvânex Logo" style={{ width: '120px', height: '120px' }} />
           <div className="flex gap-1.5">
             <div className="w-2 h-2 bg-[var(--teal-bright)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
             <div className="w-2 h-2 bg-[var(--teal-bright)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1263,19 +1263,6 @@ function ChatInterfaceInner() {
 
           <div className="chat-title">
             {activeConversation?.title || 'New Conversation'}
-            {shouldIncludePersonalization(preferences) && (
-              <span style={{ 
-                marginLeft: '12px', 
-                fontSize: '12px', 
-                background: 'var(--teal-dark)', 
-                color: 'white', 
-                padding: '2px 8px', 
-                borderRadius: '12px',
-                opacity: 0.8
-              }}>
-                Personalized
-              </span>
-            )}
           </div>
           <ModelSelector
             models={models}
@@ -1466,23 +1453,31 @@ function ChatInterfaceInner() {
               )}
             </>
           ) : (
-            /* Empty State - Centered Logo */
+            /* Empty State - Centered Logo with Welcome Message */
             <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
-              <img 
-                src="/Logo.png" 
-                alt="Zarvânex Logo" 
-                style={{ 
-                  width: '180px', 
-                  height: '180px', 
-                  marginBottom: '24px',
-                  background: 'var(--bg-darker)',
-                  borderRadius: '20px',
-                  padding: '20px'
-                }} 
+              <img
+                src="/Logo.png"
+                alt="Zurvânex Logo"
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  marginBottom: '20px',
+                }}
               />
-              <h1 className="text-4xl font-bold text-[var(--gray-med)] tracking-tight">
-                Zarvânex
+              <h1 className="text-3xl font-bold text-[var(--gray-med)] tracking-tight mb-4">
+                Zurvânex
               </h1>
+              <p style={{
+                color: 'var(--gray-light)',
+                fontSize: '15px',
+                maxWidth: '480px',
+                lineHeight: '1.6',
+                marginBottom: '32px',
+                padding: '0 20px',
+              }}>
+                Hey there! I&apos;m your AI companion, ready to help with anything you need.
+                Ask me questions, brainstorm ideas, or just chat.
+              </p>
             </div>
           )}
           <div ref={messagesEndRef} />

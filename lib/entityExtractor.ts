@@ -48,8 +48,8 @@ export class EntityExtractor {
     
     // Brands/Products
     'yexen': { type: 'BRAND' as EntityType, context: 'jewelry brand' },
-    'zarvânex': { type: 'PRODUCT' as EntityType, context: 'AI chat application' },
-    'zarvanex': { type: 'PRODUCT' as EntityType, context: 'AI chat application' },
+    'zurvânex': { type: 'PRODUCT' as EntityType, context: 'AI chat application' },
+    'zurvanex': { type: 'PRODUCT' as EntityType, context: 'AI chat application' },
     
     // Places
     'kazerun': { type: 'CITY' as EntityType, context: 'city in Iran' },

@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           color: '#fff',
           textAlign: 'center'
         }}>
-          <img src="/Logo.png" alt="Zarvânex" style={{ width: '100px', height: '100px', marginBottom: '20px' }} />
+          <img src="/Logo.png" alt="Zurvânex" style={{ width: '100px', height: '100px', marginBottom: '20px' }} />
           <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>Something went wrong</h1>
           <p style={{ color: '#999', marginBottom: '20px' }}>
             {this.state.error?.message || 'An unexpected error occurred'}

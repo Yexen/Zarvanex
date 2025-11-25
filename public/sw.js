@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zarvanex-v2';
+const CACHE_NAME = 'zurvanex-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -83,7 +83,7 @@ self.addEventListener('activate', (event) => {
 // Handle push notifications
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
-  const title = data.title || 'Zarvanex';
+  const title = data.title || 'Zurvanex';
   const options = {
     body: data.body || 'You have a new message',
     icon: '/icon-192.png',

@@ -824,8 +824,37 @@ body {
     gap: 16px;
 }
 
+/* Sleek Scrollbars - Global */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(114, 212, 204, 0.3) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(114, 212, 204, 0.25);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(114, 212, 204, 0.5);
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
 .chat-messages::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .chat-messages::-webkit-scrollbar-track {
@@ -833,8 +862,12 @@ body {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+    background: rgba(114, 212, 204, 0.25);
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(114, 212, 204, 0.5);
 }
 
 .message {
@@ -914,7 +947,8 @@ body {
     padding: 24px;
     background: var(--darker-bg);
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
 }
 
 .input-container {
@@ -1305,7 +1339,7 @@ body {
   }
 
   /* Empty state logo */
-  .chat-messages img[alt="Zarvânex Logo"] {
+  .chat-messages img[alt="Zurvânex Logo"] {
     width: 80px !important;
     height: 80px !important;
     margin-bottom: 16px !important;

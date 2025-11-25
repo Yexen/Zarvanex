@@ -1,10 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Get-ChildItem -Path . -Exclude nul,zarvanex.zip | Compress-Archive -DestinationPath zarvanex.zip -Force\")",
-      "Bash(powershell -Command \"(Get-Item zarvanex.tar.gz).FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path . -Exclude nul,zurvanex.zip | Compress-Archive -DestinationPath zurvanex.zip -Force\")",
+      "Bash(powershell -Command \"(Get-Item zurvanex.tar.gz).FullName\")",
       "Bash(npm uninstall:*)",
-      "WebFetch(domain:zarvanex.vercel.app)",
+      "WebFetch(domain:zurvanex.vercel.app)",
       "Bash(npm run dev:*)",
       "Bash(npm install)",
       "Bash(git add:*)",
@@ -17,7 +17,10 @@
       "Bash(libsmartHardMemorySearch.ts)",
       "WebSearch",
       "Bash(cat:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(git config:*)",
+      "Bash(git rebase:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

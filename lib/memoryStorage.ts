@@ -1,7 +1,7 @@
 import type { Memory, Folder } from '@/types/memory';
 
 // IndexedDB database setup
-const DB_NAME = 'zarvanex-memories';
+const DB_NAME = 'zurvanex-memories';
 const DB_VERSION = 2; // Incremented for personalization + entity index
 const MEMORY_STORE = 'memories';
 const FOLDER_STORE = 'folders';

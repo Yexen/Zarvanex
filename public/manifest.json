@@ -1,6 +1,6 @@
 {
-  "name": "Zarvanex - AI Assistant",
-  "short_name": "Zarvanex",
+  "name": "Zurvanex - AI Assistant",
+  "short_name": "Zurvanex",
   "description": "Personal AI assistant powered by LM Studio with time-aware reminders and notifications",
   "start_url": "/",
   "display": "standalone",

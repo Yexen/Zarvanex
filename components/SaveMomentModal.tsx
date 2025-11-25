@@ -69,7 +69,7 @@ export default function SaveMomentModal({ userMessage, aiMessage, onClose }: Sav
     ctx.fillStyle = '#3D9B93';
     ctx.font = 'bold 44px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Zarvânex Moment', canvas.width / 2, 90);
+    ctx.fillText('Zurvânex Moment', canvas.width / 2, 90);
 
     // Date
     const date = new Date(aiMessage.timestamp);
@@ -136,7 +136,7 @@ export default function SaveMomentModal({ userMessage, aiMessage, onClose }: Sav
 
     ctx.fillStyle = '#3D9B93';
     ctx.font = 'bold 28px "Courier New", monospace';
-    ctx.fillText('Zarvânex:', padding, yPosition);
+    ctx.fillText('Zurvânex:', padding, yPosition);
     yPosition += 50;
 
     // AI message content (truncate if too long)
@@ -162,7 +162,7 @@ export default function SaveMomentModal({ userMessage, aiMessage, onClose }: Sav
     ctx.fillStyle = '#3D9B93';
     ctx.font = 'bold 28px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Zarvânex', canvas.width / 2, footerY + 20);
+    ctx.fillText('Zurvânex', canvas.width / 2, footerY + 20);
 
     ctx.fillStyle = '#666666';
     ctx.font = 'bold 20px "Courier New", monospace';
@@ -177,7 +177,7 @@ export default function SaveMomentModal({ userMessage, aiMessage, onClose }: Sav
 
     const link = document.createElement('a');
     const timestamp = new Date().toISOString().slice(0, 10);
-    link.download = `zarvanex-moment-${timestamp}.png`;
+    link.download = `zurvanex-moment-${timestamp}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -191,10 +191,10 @@ export default function SaveMomentModal({ userMessage, aiMessage, onClose }: Sav
 
       if (navigator.share) {
         try {
-          const file = new File([blob], 'zarvanex-moment.png', { type: 'image/png' });
+          const file = new File([blob], 'zurvanex-moment.png', { type: 'image/png' });
           await navigator.share({
             files: [file],
-            title: 'Zarvânex Moment',
+            title: 'Zurvânex Moment',
             text: 'Check out this conversation moment!',
           });
         } catch (err) {

@@ -4,7 +4,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Zarvânex - Neural Time Interface',
+  title: 'Zurvânex - Neural Time Interface',
   description: 'Personal LLM interface powered by LM Studio',
   manifest: '/manifest.json',
   icons: {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Zarvânex',
+    title: 'Zurvânex',
   },
 };
 

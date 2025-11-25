@@ -425,7 +425,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
     <div className="input-area">
       {/* File previews - shown above input */}
       {files.length > 0 && (
-        <div style={{ marginBottom: '12px' }}>
+        <div style={{ marginBottom: '12px', maxWidth: '900px', width: '100%' }}>
           {/* Info for converted PDFs (images) */}
           {files.some(f => f.isConverted) && (
             <div style={{
@@ -559,7 +559,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
             onInput={handleInput}
             placeholder={message.startsWith('./') ? 
               "Type: ./personalization friendly, coding enthusiast, prefer detailed explanations" : 
-              "Message Zarvânex... (try: ./personalization)"
+              "Message Zurvânex... (try: ./personalization)"
             }
             disabled={disabled}
             rows={1}

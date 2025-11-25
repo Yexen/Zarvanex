@@ -1,7 +1,7 @@
-# Zarvanex - Comprehensive Overview
+# Zurvanex - Comprehensive Overview
 
 ## App Description
-**Zarvanex** is a personal AI chat interface (Neural Time Interface) that provides access to multiple AI providers and models through a unified interface. It supports local models via Ollama and cloud-based models from various providers.
+**Zurvanex** is a personal AI chat interface (Neural Time Interface) that provides access to multiple AI providers and models through a unified interface. It supports local models via Ollama and cloud-based models from various providers.
 
 ---
 
@@ -146,7 +146,7 @@ Example: "What's my cat's name?"
 ## Project Structure
 
 ```
-Zarvanex/
+Zurvanex/
 ├── app/                          # Next.js App Router
 │   ├── api/                      # API routes
 │   │   └── chat/                 # Chat endpoints
@@ -490,7 +490,7 @@ NEXT_PUBLIC_OLLAMA_API=http://localhost:11434  # Default
 ## Deployment
 
 ### Production (Vercel)
-- **URL**: https://zarvanex.vercel.app/
+- **URL**: https://zurvanex.vercel.app/
 - **Platform**: Vercel (automatic deployments from GitHub)
 - **Environment**: Serverless functions for API routes
 - **Region**: Auto-selected based on user location
@@ -507,8 +507,8 @@ NEXT_PUBLIC_OLLAMA_API=http://localhost:11434  # Default
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/Yexen/Zarvanex
-cd Zarvanex
+git clone https://github.com/Yexen/Zurvanex
+cd Zurvanex
 npm install
 ```
 
@@ -555,7 +555,7 @@ ollama serve
 
 ## Support & Resources
 
-- **GitHub**: https://github.com/Yexen/Zarvanex
+- **GitHub**: https://github.com/Yexen/Zurvanex
 - **Vercel Dashboard**: https://vercel.com/dashboard
 - **Supabase Dashboard**: https://supabase.com/dashboard
 - **Ollama**: https://ollama.ai

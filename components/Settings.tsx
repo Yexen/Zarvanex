@@ -610,7 +610,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--darker-bg)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                       <div>
                         <div style={{ color: 'var(--gray-light)', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
-                          Install Zarvânex App
+                          Install Zurvânex App
                         </div>
                         <div style={{ color: 'var(--gray-dark)', fontSize: '12px' }}>
                           Add to your home screen for a native app experience
