@@ -8,7 +8,7 @@ export function createGroqClient(apiKey: string) {
 
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>;
+  content: string;
 }
 
 /**
@@ -29,33 +29,18 @@ export async function sendGroqMessage(
   const groq = createGroqClient(apiKey);
 
   // Convert our messages to Groq format
+  // Note: Groq models don't support vision, so we only send text
   const formattedMessages: GroqMessage[] = messages.map((msg) => {
-    // If message has images, use multimodal content format
+    let content = msg.content;
+
+    // If images are present, add a note (since Groq doesn't support vision)
     if (msg.images && msg.images.length > 0) {
-      const content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [
-        { type: 'text', text: msg.content },
-      ];
-
-      // Add all images
-      for (const imageData of msg.images) {
-        content.push({
-          type: 'image_url',
-          image_url: {
-            url: imageData.startsWith('data:') ? imageData : `data:image/png;base64,${imageData}`,
-          },
-        });
-      }
-
-      return {
-        role: msg.role,
-        content,
-      };
+      content += `\n\n[Note: ${msg.images.length} image(s) were attached but cannot be processed by this model as it doesn't support vision]`;
     }
 
-    // Regular text message
     return {
       role: msg.role,
-      content: msg.content,
+      content,
     };
   });
 
