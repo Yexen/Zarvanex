@@ -86,27 +86,44 @@ export async function sendPuterMessage(
 
     if (onChunk) {
       // Streaming response
+      console.log('Requesting streaming response...');
       const stream = await window.puter.ai.chat(formattedMessages as any, {
         model: modelId,
         stream: true,
       });
 
+      console.log('Stream received:', typeof stream, stream);
+      console.log('Is ReadableStream?', stream instanceof ReadableStream);
+
       let fullResponse = '';
 
       if (stream instanceof ReadableStream) {
+        console.log('Processing ReadableStream...');
         const reader = stream.getReader();
         const decoder = new TextDecoder();
 
+        let chunkCount = 0;
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          console.log(`Chunk ${chunkCount++}:`, { done, valueType: typeof value, valueLength: value?.length });
+
+          if (done) {
+            console.log('Stream complete. Total response length:', fullResponse.length);
+            break;
+          }
 
           const chunk = decoder.decode(value, { stream: true });
+          console.log('Decoded chunk:', chunk);
           fullResponse += chunk;
           onChunk(chunk);
         }
+      } else {
+        console.warn('Stream is not a ReadableStream, treating as direct response');
+        fullResponse = typeof stream === 'string' ? stream : JSON.stringify(stream);
+        onChunk(fullResponse);
       }
 
+      console.log('Final fullResponse:', fullResponse);
       return fullResponse;
     } else {
       // Non-streaming response
