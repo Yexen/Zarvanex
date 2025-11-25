@@ -60,6 +60,9 @@ export async function sendPuterMessage(
   }
 
   try {
+    console.log('Calling Puter AI with model:', modelId);
+    console.log('Formatted messages:', formattedMessages);
+
     if (onChunk) {
       // Streaming response
       const stream = await window.puter.ai.chat(formattedMessages as any, {
@@ -94,7 +97,10 @@ export async function sendPuterMessage(
       return typeof response === 'string' ? response : '';
     }
   } catch (error) {
-    console.error('Puter AI error:', error);
+    console.error('Puter AI error details:', error);
+    console.error('Model ID that failed:', modelId);
+    console.error('Error message:', (error as Error).message);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   }
 }

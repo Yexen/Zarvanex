@@ -1052,7 +1052,7 @@ function ChatInterfaceInner() {
       } else if (provider === 'cohere') {
         errorContent += 'Please check your Cohere API key configuration.';
       } else if (provider === 'puter') {
-        errorContent += 'Please make sure you are signed in to Puter. Users pay for their own API usage.';
+        errorContent += 'Please make sure you are signed in to Puter. Users pay for their own API usage.\n\nError details: ' + ((error as Error).message || 'Unknown error');
       } else {
         errorContent += 'Please check your API configuration.';
       }
