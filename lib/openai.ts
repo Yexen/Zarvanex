@@ -6,11 +6,6 @@ export function createOpenAIClient(apiKey: string) {
   return new OpenAI({ apiKey });
 }
 
-export interface OpenAIMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>;
-}
-
 /**
  * Send message to OpenAI with streaming support
  */
@@ -24,22 +19,18 @@ export async function sendOpenAIMessage(
   const openai = createOpenAIClient(apiKey);
 
   // Convert our messages to OpenAI format
-  const formattedMessages: OpenAIMessage[] = messages.map((msg) => {
+  const formattedMessages = messages.map((msg) => {
     // If message has images, use multimodal content format
     if (msg.images && msg.images.length > 0) {
-      const content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [
-        { type: 'text', text: msg.content },
-      ];
-
-      // Add all images
-      for (const imageData of msg.images) {
-        content.push({
-          type: 'image_url',
+      const content = [
+        { type: 'text' as const, text: msg.content },
+        ...msg.images.map(imageData => ({
+          type: 'image_url' as const,
           image_url: {
             url: imageData.startsWith('data:') ? imageData : `data:image/png;base64,${imageData}`,
           },
-        });
-      }
+        })),
+      ];
 
       return {
         role: msg.role,
