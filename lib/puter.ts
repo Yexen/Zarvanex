@@ -92,12 +92,35 @@ export async function sendPuterMessage(
         stream: true,
       });
 
-      console.log('Stream received:', typeof stream, stream);
+      console.log('Stream received:', typeof stream, stream?.constructor?.name);
       console.log('Is ReadableStream?', stream instanceof ReadableStream);
+      console.log('Is AsyncGenerator?', stream?.constructor?.name === 'AsyncGenerator');
 
       let fullResponse = '';
 
-      if (stream instanceof ReadableStream) {
+      // Check if it's an AsyncGenerator (Puter's format)
+      if (stream && typeof stream[Symbol.asyncIterator] === 'function') {
+        console.log('Processing AsyncGenerator...');
+        let chunkCount = 0;
+
+        try {
+          for await (const chunk of stream) {
+            console.log(`Chunk ${chunkCount++}:`, typeof chunk, chunk);
+
+            // Chunk might be a string or an object with content
+            const content = typeof chunk === 'string' ? chunk : (chunk?.content || JSON.stringify(chunk));
+
+            if (content) {
+              fullResponse += content;
+              onChunk(content);
+            }
+          }
+          console.log('AsyncGenerator complete. Total response length:', fullResponse.length);
+        } catch (streamError) {
+          console.error('Error reading AsyncGenerator:', streamError);
+          throw streamError;
+        }
+      } else if (stream instanceof ReadableStream) {
         console.log('Processing ReadableStream...');
         const reader = stream.getReader();
         const decoder = new TextDecoder();
@@ -118,7 +141,7 @@ export async function sendPuterMessage(
           onChunk(chunk);
         }
       } else {
-        console.warn('Stream is not a ReadableStream, treating as direct response');
+        console.warn('Stream is not a recognized format, treating as direct response');
         fullResponse = typeof stream === 'string' ? stream : JSON.stringify(stream);
         onChunk(fullResponse);
       }
