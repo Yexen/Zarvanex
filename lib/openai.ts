@@ -58,7 +58,7 @@ export async function sendOpenAIMessage(
       // Streaming response
       const stream = await openai.chat.completions.create({
         model: modelId,
-        messages: formattedMessages,
+        messages: formattedMessages as any,
         temperature: 0.7,
         max_tokens: 4096,
         stream: true,
@@ -77,7 +77,7 @@ export async function sendOpenAIMessage(
       // Non-streaming response
       const completion = await openai.chat.completions.create({
         model: modelId,
-        messages: formattedMessages,
+        messages: formattedMessages as any,
         temperature: 0.7,
         max_tokens: 4096,
         stream: false,
