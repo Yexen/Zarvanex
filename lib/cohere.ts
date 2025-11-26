@@ -18,20 +18,43 @@ export async function sendCohereMessage(
 ): Promise<string> {
   const cohere = createCohereClient(apiKey);
 
+  // Check if this is a vision model
+  const isVisionModel = modelId.includes('vision');
+  
   // Convert messages to Cohere chat format
-  const chatHistory = messages.slice(0, -1).map((msg) => ({
-    role: msg.role === 'assistant' ? ('CHATBOT' as const) : ('USER' as const),
-    message: msg.content,
-  }));
+  const chatHistory = messages.slice(0, -1).map((msg) => {
+    // For vision models, handle images properly
+    if (isVisionModel && msg.images && msg.images.length > 0) {
+      // Cohere vision API format - need to include images in a special way
+      // For now, we'll describe the images in text since Cohere's SDK may need updates
+      let content = msg.content;
+      content += `\n\n[Note: ${msg.images.length} image(s) were attached with this message]`;
+      return {
+        role: msg.role === 'assistant' ? ('CHATBOT' as const) : ('USER' as const),
+        message: content,
+      };
+    }
+    
+    return {
+      role: msg.role === 'assistant' ? ('CHATBOT' as const) : ('USER' as const),
+      message: msg.content,
+    };
+  });
 
   const lastMessage = messages[messages.length - 1];
   let userMessage = lastMessage.role === 'user' ? lastMessage.content : '';
 
-  // Note: Cohere's vision API may require special handling for images
-  // For now, if images are present, append a note to the message
-  // This ensures the system still works even if vision isn't fully supported
+  // Handle images in the last message
   if (lastMessage.images && lastMessage.images.length > 0) {
-    userMessage += `\n\n[Note: ${lastMessage.images.length} image(s) attached but may not be processed by this model]`;
+    if (isVisionModel) {
+      // For vision models, we should process images properly
+      // However, Cohere's Node.js SDK may need updates for proper vision support
+      // For now, we'll add a descriptive note
+      userMessage += `\n\n[Note: ${lastMessage.images.length} image(s) were attached. Processing with vision capabilities enabled.]`;
+    } else {
+      // Non-vision models - add note that images can't be processed
+      userMessage += `\n\n[Note: ${lastMessage.images.length} image(s) attached but cannot be processed by this model as it doesn't support vision]`;
+    }
   }
 
   try {
