@@ -52,10 +52,42 @@ export async function sendPuterMessage(
   }
 
   // Convert messages to Puter format
-  // Puter expects array of {role, content} objects where content is a string
+  // Puter expects array of {role, content} objects
+  // For vision models, content can be an array with text and image_url objects
   const formattedMessages = messages
     .filter(msg => msg.content && msg.content.trim().length > 0) // Only include messages with content
     .map((msg) => {
+      // If message has images, format for vision models
+      if (msg.images && msg.images.length > 0) {
+        // Puter vision format: content is array of {type, text/image_url}
+        const content: any[] = [
+          { type: 'text', text: msg.content.trim() }
+        ];
+
+        // Add images
+        for (const imageData of msg.images) {
+          // Skip non-image data (like videos or documents that couldn't be processed)
+          if (!imageData.startsWith('data:image/') && !imageData.startsWith('data:video/')) {
+            continue;
+          }
+
+          content.push({
+            type: 'image_url',
+            image_url: {
+              url: imageData
+            }
+          });
+        }
+
+        console.log(`[Puter] Message has ${msg.images.length} media attachments`);
+
+        return {
+          role: msg.role,
+          content
+        };
+      }
+
+      // Regular text-only message
       return {
         role: msg.role, // 'user' or 'assistant'
         content: msg.content.trim()
@@ -65,17 +97,35 @@ export async function sendPuterMessage(
   // Prepend system prompt to first user message instead of using system role
   // Puter may not support 'system' role
   if (systemPrompt && formattedMessages.length > 0 && formattedMessages[0].role === 'user') {
-    formattedMessages[0] = {
-      role: 'user',
-      content: `${systemPrompt}\n\n${formattedMessages[0].content}`
-    };
+    const firstMsg = formattedMessages[0];
+
+    if (Array.isArray(firstMsg.content)) {
+      // Content is array (multimodal) - prepend system prompt to text part
+      const textPart = firstMsg.content.find((c: any) => c.type === 'text');
+      if (textPart) {
+        textPart.text = `${systemPrompt}\n\n${textPart.text}`;
+      } else {
+        // No text part found, add one
+        firstMsg.content.unshift({ type: 'text', text: systemPrompt });
+      }
+    } else {
+      // Content is string - simple prepend
+      formattedMessages[0] = {
+        role: 'user',
+        content: `${systemPrompt}\n\n${firstMsg.content}`
+      };
+    }
   }
 
   console.log('Final formatted messages:', JSON.stringify(formattedMessages, null, 2));
 
   // Validate all messages have content
   for (const msg of formattedMessages) {
-    if (!msg.content || typeof msg.content !== 'string') {
+    const hasContent = msg.content && (
+      typeof msg.content === 'string' ||
+      (Array.isArray(msg.content) && msg.content.length > 0)
+    );
+    if (!hasContent) {
       throw new Error(`Invalid message format: message missing content. Message: ${JSON.stringify(msg)}`);
     }
   }
