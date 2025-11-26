@@ -111,15 +111,36 @@ export default function MessageBubble({ message, onRegenerate, onBranch, onSaveM
     }
   };
 
-  // Parse attached files from base64 data URLs
+  // Parse attached files from base64 data URLs or HTTP URLs
   const files: FilePreview[] = message.images
     ? message.images.map((data, idx) => {
-        const mimeType = data.split(';')[0].split(':')[1] || '';
-        const isImage = mimeType.startsWith('image/');
+        let mimeType = '';
+        let isImage = false;
+        let extension = 'file';
 
-        // Extract filename from data or generate one
-        const extension = mimeType.split('/')[1] || 'file';
-        const name = `File ${idx + 1}.${extension}`;
+        // Check if it's a data URL
+        if (data.startsWith('data:')) {
+          mimeType = data.split(';')[0].split(':')[1] || '';
+          isImage = mimeType.startsWith('image/');
+          extension = mimeType.split('/')[1] || 'file';
+        }
+        // Check if it's an HTTP URL (likely an image from generation)
+        else if (data.startsWith('http://') || data.startsWith('https://')) {
+          // Assume HTTP URLs are images (from image generation)
+          isImage = true;
+          // Try to get extension from URL
+          const urlMatch = data.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+          extension = urlMatch ? urlMatch[1] : 'png';
+          mimeType = `image/${extension}`;
+        }
+        // Check for common image extensions in the data
+        else if (data.includes('image/') || /\.(png|jpg|jpeg|gif|webp|svg)/i.test(data)) {
+          isImage = true;
+          extension = 'png';
+          mimeType = 'image/png';
+        }
+
+        const name = isImage ? `Image ${idx + 1}.${extension}` : `File ${idx + 1}.${extension}`;
 
         return {
           data,

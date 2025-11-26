@@ -291,17 +291,52 @@ export async function generatePuterImage(
     });
 
     // Call Puter's txt2img
-    const imageElement = await window.puter.ai.txt2img(prompt, options);
+    const result: any = await window.puter.ai.txt2img(prompt, options);
 
-    // Extract the data URL from the image element
-    // The returned HTMLImageElement has the image as its src (data URL)
-    const dataUrl = imageElement.src;
+    console.log('[Puter ImageGen] Raw result type:', typeof result);
+    console.log('[Puter ImageGen] Raw result:', result);
 
-    if (!dataUrl || !dataUrl.startsWith('data:')) {
-      throw new Error('Invalid image data received from Puter');
+    // Extract the data URL - handle different return formats
+    let dataUrl: string;
+
+    if (typeof result === 'string') {
+      // Direct string (data URL or URL)
+      dataUrl = result;
+    } else if (result instanceof HTMLImageElement) {
+      // HTMLImageElement - get src
+      dataUrl = result.src;
+    } else if (result?.src) {
+      // Object with src property
+      dataUrl = result.src;
+    } else if (result?.url) {
+      // Object with url property
+      dataUrl = result.url;
+    } else if (result?.data) {
+      // Object with data property
+      dataUrl = result.data;
+    } else {
+      console.error('[Puter ImageGen] Unknown result format:', result);
+      throw new Error('Unknown image format received from Puter');
     }
 
-    console.log('[Puter ImageGen] Image generated successfully');
+    console.log('[Puter ImageGen] Extracted dataUrl prefix:', dataUrl?.substring(0, 50));
+
+    // If it's not a data URL, it might be a regular URL - fetch and convert
+    if (dataUrl && !dataUrl.startsWith('data:')) {
+      if (dataUrl.startsWith('http')) {
+        console.log('[Puter ImageGen] Got HTTP URL, using directly');
+        // For HTTP URLs, we could fetch and convert to base64, but for now just use it
+        // The browser should be able to display it
+      } else {
+        console.warn('[Puter ImageGen] Unknown URL format:', dataUrl.substring(0, 100));
+      }
+    }
+
+    if (!dataUrl) {
+      throw new Error('No image data received from Puter');
+    }
+
+    console.log('[Puter ImageGen] Image generated successfully, length:', dataUrl.length);
     return dataUrl;
 
   } catch (error: any) {
