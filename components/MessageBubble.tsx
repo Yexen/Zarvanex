@@ -435,12 +435,107 @@ export default function MessageBubble({ message, onRegenerate, onBranch, onSaveM
             alt={files[selectedImageIndex]?.name}
             style={{
               maxWidth: '90%',
-              maxHeight: '90%',
+              maxHeight: '80%',
               objectFit: 'contain',
               borderRadius: '8px',
             }}
             onClick={(e) => e.stopPropagation()}
           />
+
+          {/* Action buttons (Download) */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: files.filter(f => f.type === 'image').length > 1 ? '70px' : '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: '12px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Download button */}
+            <button
+              onClick={() => {
+                const file = files[selectedImageIndex];
+                if (file?.data) {
+                  const link = document.createElement('a');
+                  link.href = file.data;
+                  // Generate filename with timestamp
+                  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                  const ext = file.mimeType?.split('/')[1] || 'png';
+                  link.download = `zurvanex-image-${timestamp}.${ext}`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(114, 212, 204, 0.9)',
+                color: '#000',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(114, 212, 204, 1)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(114, 212, 204, 0.9)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
+
+            {/* Open in new tab button */}
+            <button
+              onClick={() => {
+                const file = files[selectedImageIndex];
+                if (file?.data) {
+                  window.open(file.data, '_blank');
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                padding: '10px 20px',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open
+            </button>
+          </div>
 
           {/* Image counter */}
           {files.filter(f => f.type === 'image').length > 1 && (
