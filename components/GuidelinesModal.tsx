@@ -266,7 +266,7 @@ function CommandsTab() {
       >
         <div style={{ fontSize: '13px', color: 'var(--gray-light)', lineHeight: 1.6 }}>
           <p><strong style={{ color: 'var(--teal-bright)' }}>Personalization:</strong> Your preferences, name, interests, and communication style are automatically remembered.</p>
-          <p><strong style={{ color: 'var(--teal-bright)' }}>Conversation Memory:</strong> Recent conversations are used to provide context.</p>
+          <p><strong style={{ color: 'var(--teal-bright)' }}>Soft Memory:</strong> Recent conversations are used to provide context.</p>
           <p><strong style={{ color: 'var(--teal-bright)' }}>Hard Memory:</strong> Important facts you save are retrieved when relevant.</p>
         </div>
       </CommandSection>
