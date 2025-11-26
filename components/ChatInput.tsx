@@ -199,17 +199,25 @@ export default function ChatInput({ onSend, disabled, supportsVision, conversati
       // Separate file types
       const imageFiles = files.filter(f => f.type === 'image' && f.data);
       const videoFiles = files.filter(f => f.type === 'video' && f.data);
-      const documentFiles = files.filter(f => f.type === 'document' && f.data);
+      const documentFiles = files.filter(f => f.type === 'document');
 
       // Build message with file attachments info
       let fullMessage = message;
 
-      // Add document info to the message (files are sent as base64)
+      // Add document content to the message
+      // PDFs with extracted text: Include full text content
+      // Other documents: Just show attachment info
       if (documentFiles.length > 0) {
-        const docInfo = documentFiles.map(doc =>
-          `[Attached Document: ${doc.name} (${doc.mimeType})]`
-        ).join('\n');
-        fullMessage = fullMessage ? `${fullMessage}\n\n${docInfo}` : docInfo;
+        const docContent = documentFiles.map(doc => {
+          if (doc.extractedText) {
+            // PDF with extracted text - include full content
+            return `📄 **Document: ${doc.name}**\n\n${doc.extractedText}`;
+          } else {
+            // Other document - just show info
+            return `[Attached Document: ${doc.name} (${doc.mimeType})]`;
+          }
+        }).join('\n\n---\n\n');
+        fullMessage = fullMessage ? `${fullMessage}\n\n${docContent}` : docContent;
       }
 
       // Add video info to the message
@@ -220,11 +228,12 @@ export default function ChatInput({ onSend, disabled, supportsVision, conversati
         fullMessage = fullMessage ? `${fullMessage}\n\n${videoInfo}` : videoInfo;
       }
 
-      // Collect all media data (images, videos, documents as base64)
+      // Collect all media data (images, videos, non-text documents as base64)
+      // Exclude PDFs with extracted text since their content is in the message
       const allMediaData = [
         ...imageFiles.map(f => f.data),
         ...videoFiles.map(f => f.data),
-        ...documentFiles.map(f => f.data),
+        ...documentFiles.filter(f => !f.extractedText && f.data).map(f => f.data),
       ].filter(Boolean);
 
       onSend(fullMessage, allMediaData.length > 0 ? allMediaData : undefined);
@@ -298,22 +307,58 @@ export default function ChatInput({ onSend, disabled, supportsVision, conversati
             fileSize: file.size,
           });
         } else if (type === 'document') {
-          // Documents - keep as files (base64), don't extract text
-          const result = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
-            reader.readAsDataURL(file);
-          });
+          // For PDFs: Extract text content so AI can read it
+          // For other documents: Keep as base64
+          if (file.type === 'application/pdf' && pdfjsLib) {
+            try {
+              console.log(`[PDF] Extracting text from: ${file.name}`);
+              const extractedText = await extractPdfText(file);
 
-          newFiles.push({
-            type: 'document',
-            data: result,
-            name: file.name,
-            mimeType: file.type,
-            fileSize: file.size,
-          });
-          console.log(`Document attached as file: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+              newFiles.push({
+                type: 'document',
+                data: '', // No base64 needed - we have text
+                name: file.name,
+                mimeType: file.type,
+                fileSize: file.size,
+                extractedText: extractedText, // Store the extracted text
+              });
+              console.log(`[PDF] Text extracted: ${file.name} (${extractedText.length} chars)`);
+            } catch (error) {
+              console.error(`[PDF] Failed to extract text from ${file.name}:`, error);
+              // Fallback to base64 if extraction fails
+              const result = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+                reader.readAsDataURL(file);
+              });
+
+              newFiles.push({
+                type: 'document',
+                data: result,
+                name: file.name,
+                mimeType: file.type,
+                fileSize: file.size,
+              });
+            }
+          } else {
+            // Non-PDF documents - keep as base64
+            const result = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+              reader.readAsDataURL(file);
+            });
+
+            newFiles.push({
+              type: 'document',
+              data: result,
+              name: file.name,
+              mimeType: file.type,
+              fileSize: file.size,
+            });
+          }
+          console.log(`Document attached: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
         }
       }
 
