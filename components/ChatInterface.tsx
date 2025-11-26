@@ -16,7 +16,7 @@ import { OPENROUTER_MODELS } from '@/lib/openrouter';
 import { OPENAI_MODELS } from '@/lib/openai';
 import { CLAUDE_MODELS } from '@/lib/claude';
 import { COHERE_MODELS } from '@/lib/cohere';
-import { PUTER_MODELS, PUTER_IMAGE_MODELS, sendPuterMessage, generatePuterImage, detectImageGenerationRequest, enhanceImagePromptWithContext } from '@/lib/puter';
+import { PUTER_MODELS, PUTER_IMAGE_MODELS, sendPuterMessage, generatePuterImage, detectImageGenerationRequest, buildImagePromptSystemMessage } from '@/lib/puter';
 import type { Conversation, Message, Model } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { compressImages, needsCompression, formatSize } from '@/utils/imageCompression';
@@ -1006,19 +1006,53 @@ function ChatInterfaceInner() {
 
     try {
       console.log('[ImageGen] Original prompt:', prompt);
-      console.log('[ImageGen] Model:', modelToUse);
+      console.log('[ImageGen] Image Model:', modelToUse);
       console.log('[ImageGen] Quality:', qualityToUse);
+      console.log('[ImageGen] Chat Model for context:', selectedModel);
 
       // Get current conversation messages for context
       const currentConversation = conversations.find(c => c.id === conversationId);
       const conversationMessages = currentConversation?.messages || [];
 
-      // Enhance the prompt with conversation context (if there's context)
+      // Use the current chat model to generate a context-aware prompt
       let enhancedPrompt = prompt;
-      if (conversationMessages.length >= 2) {
-        console.log('[ImageGen] Enhancing prompt with conversation context...');
-        enhancedPrompt = await enhanceImagePromptWithContext(prompt, conversationMessages);
-        console.log('[ImageGen] Enhanced prompt:', enhancedPrompt);
+      if (conversationMessages.length >= 2 && selectedModel) {
+        console.log('[ImageGen] Using chat model to enhance prompt with conversation context...');
+
+        try {
+          // Build messages for the chat model - include conversation history + prompt request
+          const promptRequestMessage: Message = {
+            id: 'prompt-gen',
+            role: 'user',
+            content: buildImagePromptSystemMessage(prompt),
+            timestamp: new Date(),
+          };
+
+          // Include recent conversation messages (last 10) + the prompt request
+          const messagesForPrompt = [...conversationMessages.slice(-10), promptRequestMessage];
+
+          // Call the chat model to generate the enhanced prompt
+          const chatModel = models.find(m => m.id === selectedModel);
+
+          if (chatModel?.provider === 'puter') {
+            // Use Puter for the chat model
+            const response = await sendPuterMessage(messagesForPrompt, selectedModel);
+            if (response && response.trim().length > 10) {
+              enhancedPrompt = response.trim();
+              console.log('[ImageGen] Chat model enhanced prompt:', enhancedPrompt);
+            }
+          } else {
+            // For other providers, use a quick Puter call as fallback
+            const response = await sendPuterMessage(messagesForPrompt, 'gpt-4o');
+            if (response && response.trim().length > 10) {
+              enhancedPrompt = response.trim();
+              console.log('[ImageGen] Fallback model enhanced prompt:', enhancedPrompt);
+            }
+          }
+        } catch (enhanceError) {
+          console.error('[ImageGen] Prompt enhancement failed, using original:', enhanceError);
+          // Keep using the original prompt
+        }
       }
 
       // Use first input image if provided (for img2img)

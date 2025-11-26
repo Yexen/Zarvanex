@@ -217,72 +217,24 @@ async function uploadImageToPuter(base64Data: string, index: number): Promise<st
 }
 
 /**
- * Enhance an image generation prompt with conversation context
- * Uses a fast AI model to create a more detailed, context-aware prompt
- * @param userPrompt - The user's original image prompt
- * @param conversationMessages - Recent messages from the conversation for context
- * @returns Enhanced prompt string
+ * Build a system message for image prompt generation
+ * This is used to instruct the chat model to generate an image prompt
+ * @param userPrompt - The user's original image request
+ * @returns System message for prompt generation
  */
-export async function enhanceImagePromptWithContext(
-  userPrompt: string,
-  conversationMessages: Message[]
-): Promise<string> {
-  // If no conversation context or very short conversation, return original prompt
-  if (!conversationMessages || conversationMessages.length < 2) {
-    console.log('[ImageGen] No conversation context, using original prompt');
-    return userPrompt;
-  }
+export function buildImagePromptSystemMessage(userPrompt: string): string {
+  return `The user wants to generate an image. Based on our conversation context, write a detailed image generation prompt.
 
-  // Check if puter is available
-  if (typeof window === 'undefined' || !window.puter?.ai?.chat) {
-    console.log('[ImageGen] Puter not available for prompt enhancement');
-    return userPrompt;
-  }
-
-  try {
-    // Build conversation summary (last 10 messages max, excluding images)
-    const recentMessages = conversationMessages.slice(-10);
-    const conversationSummary = recentMessages
-      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content.substring(0, 300)}`)
-      .join('\n');
-
-    const enhancementPrompt = `You are an image prompt enhancer. Based on the conversation context below, enhance the user's image generation prompt to be more detailed and contextually relevant.
-
-CONVERSATION CONTEXT:
-${conversationSummary}
-
-USER'S IMAGE PROMPT: "${userPrompt}"
+USER'S REQUEST: "${userPrompt}"
 
 INSTRUCTIONS:
-- Keep the core intent of the user's prompt
-- Add relevant details from the conversation context (characters, settings, style, mood)
-- Make it more descriptive for image generation
+- Write a detailed, descriptive prompt for an image generation AI
+- Include relevant details from our conversation (characters, settings, style, mood, colors)
+- Be specific about visual elements: composition, lighting, art style, atmosphere
 - Keep it under 200 words
-- Output ONLY the enhanced prompt, nothing else
+- Output ONLY the image prompt, nothing else - no explanations, no "Here's the prompt:", just the prompt itself
 
-ENHANCED PROMPT:`;
-
-    console.log('[ImageGen] Enhancing prompt with conversation context...');
-
-    // Use a fast model for prompt enhancement
-    const response = await window.puter.ai.chat(enhancementPrompt, {
-      model: 'gpt-3.5-turbo', // Fast and cheap
-      stream: false,
-    });
-
-    const enhancedPrompt = typeof response === 'string' ? response.trim() : userPrompt;
-
-    // Validate the enhanced prompt isn't empty or too long
-    if (enhancedPrompt && enhancedPrompt.length > 10 && enhancedPrompt.length < 2000) {
-      console.log('[ImageGen] Enhanced prompt:', enhancedPrompt.substring(0, 100) + '...');
-      return enhancedPrompt;
-    }
-
-    return userPrompt;
-  } catch (error) {
-    console.error('[ImageGen] Prompt enhancement failed, using original:', error);
-    return userPrompt;
-  }
+IMAGE PROMPT:`;
 }
 
 /**
