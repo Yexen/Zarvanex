@@ -30,9 +30,11 @@ import { getHardMemoryContext, formatHardMemoryForPrompt } from '@/lib/hardMemor
 import { generateSmartTitle, shouldUseSmartTitles } from '@/lib/smartTitles';
 import { smartHardMemorySearch } from '@/lib/smartHardMemorySearch';
 import { generateGreeting, type GreetingStyle } from '@/lib/greetings';
+import { useI18n } from '@/lib/i18n';
 
 function ChatInterfaceInner() {
   const router = useRouter();
+  const { t } = useI18n();
 
   // Hooks
   const { user, loading: authLoading } = useAuth();
@@ -1912,7 +1914,7 @@ function ChatInterfaceInner() {
                 }}
               />
               <h1 className="text-2xl font-semibold text-[var(--gray-light)] tracking-tight mb-3" style={{ maxWidth: '500px', padding: '0 20px' }}>
-                {currentGreeting.greeting || 'Welcome to Zurvânex'}
+                {currentGreeting.greeting || t('welcome.title')}
               </h1>
               <p style={{
                 color: 'var(--gray-med)',
@@ -1922,7 +1924,7 @@ function ChatInterfaceInner() {
                 marginBottom: '32px',
                 padding: '0 20px',
               }}>
-                {currentGreeting.subtext || 'Ask me anything, brainstorm ideas, or just chat.'}
+                {currentGreeting.subtext || t('welcome.subtitle')}
               </p>
             </div>
           )}

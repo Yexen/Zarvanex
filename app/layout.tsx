@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import PWARegister from '@/components/PWARegister';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -48,10 +49,12 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         <ErrorBoundary>
-          <div suppressHydrationWarning>
-            <PWARegister />
-            {children}
-          </div>
+          <Providers>
+            <div suppressHydrationWarning>
+              <PWARegister />
+              {children}
+            </div>
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>

@@ -1,0 +1,329 @@
+{
+  "app": {
+    "name": "Zurvanex",
+    "tagline": "Your AI Companion"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Create Account",
+    "signOut": "Sign Out",
+    "continueWithGoogle": "Continue with Google",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Enter your password",
+    "createAccount": "Create your account",
+    "signInToContinue": "Sign in to continue",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "errors": {
+      "enterEmailPassword": "Please enter email and password",
+      "noAccount": "No account found with this email",
+      "wrongPassword": "Incorrect password",
+      "emailInUse": "Email already in use",
+      "weakPassword": "Password should be at least 6 characters",
+      "authFailed": "Authentication failed"
+    }
+  },
+  "chat": {
+    "newChat": "New chat",
+    "newConversation": "New Conversation",
+    "searchChats": "Search chats",
+    "allChats": "All chats",
+    "noConversations": "No conversations yet",
+    "noConversationsFound": "No conversations found",
+    "startTypingToSearch": "Start typing to search conversations",
+    "messagePlaceholder": "Message Zurvanex...",
+    "send": "Send",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "branch": "Branch",
+    "resend": "Resend",
+    "saveThisMoment": "Save This Moment",
+    "analyze": "Analyze",
+    "scrollToTop": "Scroll to top",
+    "scrollToBottom": "Scroll to bottom",
+    "deleteConversation": "Delete Conversation",
+    "deleteConfirm": "Are you sure you want to delete this conversation? This action cannot be undone.",
+    "deleteMultipleConfirm": "Are you sure you want to delete {count} conversations? This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "rename": "Rename",
+    "info": "Info",
+    "select": "Select",
+    "deselect": "Deselect",
+    "selected": "{count} selected",
+    "clear": "Clear",
+    "seeMore": "See {count} more",
+    "conversationInfo": "Conversation Info",
+    "title": "Title",
+    "totalMessages": "Total Messages",
+    "yourMessages": "Your Messages",
+    "aiMessages": "AI Messages",
+    "model": "Model",
+    "started": "Started",
+    "lastMessage": "Last Message"
+  },
+  "welcome": {
+    "title": "Welcome to Zurvanex",
+    "subtitle": "Ask me anything, brainstorm ideas, or just chat."
+  },
+  "sidebar": {
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "settings": "Settings",
+    "searchPlaceholder": "Search by title or message content..."
+  },
+  "input": {
+    "attachFiles": "Attach files",
+    "dropFilesHere": "Drop files here",
+    "filesInfo": "Images, videos, documents (max 10MB each)",
+    "filesExceedLimit": "Some files exceed 10MB limit",
+    "filesAttached": "{count}/{max} files attached (max 10MB each)",
+    "removeFile": "Remove {filename}",
+    "voiceInput": "Voice Input (Coming Soon)",
+    "pdfConverted": "PDF converted to images for vision analysis",
+    "pdfTextExtracted": "Text extracted from large PDF - will be included with your message"
+  },
+  "models": {
+    "selectModel": "Select a model",
+    "pleaseSelectModel": "Please select a model first",
+    "freeModels": "Free Models",
+    "contextWindow": "Context: {size}",
+    "thinkingMode": "Thinking Mode",
+    "vision": "Vision"
+  },
+  "settings": {
+    "title": "Settings",
+    "extendedPersonalization": "Extended Personalization",
+    "back": "Back",
+    "save": "Save All Changes",
+    "saving": "Saving...",
+    "savedSuccessfully": "Settings saved successfully!",
+    "saveFailed": "Failed to save settings. Please try again.",
+    "tabs": {
+      "profile": "Profile",
+      "personalInfo": "Personal Info",
+      "aiStyle": "AI Style",
+      "communication": "Communication",
+      "content": "Content",
+      "accessibility": "Accessibility"
+    },
+    "profile": {
+      "title": "Profile",
+      "avatar": "Profile Picture",
+      "avatarHint": "Click to upload (max 2MB)",
+      "avatarSizeError": "Image size must be less than 2MB",
+      "nickname": "Nickname",
+      "nicknamePlaceholder": "How would you like to be called?",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Your full name or display name",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell the AI about yourself - your personality, interests, work, or anything you'd like it to know for more personalized conversations.",
+      "location": "Location",
+      "locationPlaceholder": "City, Country",
+      "website": "Website",
+      "websitePlaceholder": "https://yoursite.com",
+      "pronouns": "Pronouns",
+      "pronounsPlaceholder": "they/them, she/her, etc.",
+      "language": "Language"
+    },
+    "personalInfo": {
+      "title": "Personal Information",
+      "occupation": "Occupation / Role",
+      "occupationPlaceholder": "What do you do for work? This helps the AI provide more relevant examples and advice.",
+      "background": "Background & Experience",
+      "backgroundPlaceholder": "Your educational background, professional experience, or any relevant context.",
+      "goals": "Goals & Aspirations",
+      "goalsPlaceholder": "What are you working towards? Personal goals, professional aspirations, or projects.",
+      "interests": "Interests & Hobbies",
+      "interestsPlaceholder": "Add an interest...",
+      "skills": "Skills & Expertise",
+      "skillsPlaceholder": "Add a skill...",
+      "add": "Add"
+    },
+    "aiStyle": {
+      "title": "AI Style",
+      "customInstructions": "Custom Instructions",
+      "customInstructionsPlaceholder": "Add any specific instructions for how the AI should behave, respond, or what it should know about you. These will be included in every conversation.",
+      "customInstructionsHint": "Example: \"Always explain code with comments\" or \"Respond in a conversational tone\"",
+      "tone": "Conversation Tone",
+      "tones": {
+        "professional": "Professional",
+        "casual": "Casual",
+        "friendly": "Friendly",
+        "balanced": "Balanced",
+        "encouraging": "Encouraging",
+        "direct": "Direct",
+        "thoughtful": "Thoughtful",
+        "playful": "Playful"
+      },
+      "formality": "Formality Level",
+      "formalityOptions": {
+        "formal": "Formal",
+        "casual": "Casual",
+        "adaptive": "Adaptive"
+      },
+      "responseLength": "Response Length",
+      "responseLengthOptions": {
+        "concise": "Concise",
+        "detailed": "Detailed",
+        "comprehensive": "Comprehensive"
+      },
+      "technicalDepth": "Technical Depth",
+      "technicalOptions": {
+        "basic": "Basic",
+        "medium": "Medium",
+        "advanced": "Advanced"
+      },
+      "empathy": "Empathy Level",
+      "empathyOptions": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "humor": "Use Humor & Wit",
+      "humorHint": "Allow the AI to use appropriate humor and casual expressions"
+    },
+    "communication": {
+      "title": "Communication",
+      "greetingStyle": "Greeting Style",
+      "greetingStyleHint": "How I greet you on the home screen",
+      "greetingOptions": {
+        "friendly": "Friendly",
+        "professional": "Professional",
+        "witty": "Witty",
+        "zen": "Zen",
+        "enthusiastic": "Enthusiastic"
+      },
+      "responseLength": "Response Length",
+      "explanationStyle": "Explanation Style",
+      "explanationOptions": {
+        "examples": "Examples",
+        "stepByStep": "Step by Step",
+        "conceptual": "Conceptual"
+      },
+      "feedbackStyle": "Feedback Style",
+      "feedbackOptions": {
+        "direct": "Direct",
+        "constructive": "Constructive",
+        "encouraging": "Encouraging"
+      }
+    },
+    "content": {
+      "title": "Content Preferences",
+      "topics": "Topics of Interest",
+      "topicsPlaceholder": "Add a topic...",
+      "expertise": "Expertise Areas",
+      "expertisePlaceholder": "Add an expertise area...",
+      "preferredExamples": "Preferred Example Types",
+      "exampleOptions": {
+        "theoretical": "Theoretical",
+        "realWorld": "Real World",
+        "mixed": "Mixed"
+      }
+    },
+    "accessibility": {
+      "title": "Accessibility",
+      "fontSize": "Font Size",
+      "fontSizeHint": "Changes apply immediately",
+      "fontSizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large"
+      },
+      "highContrast": "High Contrast Mode",
+      "highContrastHint": "Increase contrast for better visibility",
+      "screenReader": "Screen Reader Friendly",
+      "screenReaderHint": "Optimize interface for screen readers",
+      "reducedMotion": "Reduced Motion",
+      "reducedMotionHint": "Minimize animations and transitions"
+    },
+    "languages": {
+      "en": "English",
+      "fa": "Persian",
+      "fr": "French"
+    }
+  },
+  "memory": {
+    "title": "Memory",
+    "createNew": "Create New Memory",
+    "edit": "Edit Memory",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this memory? This action cannot be undone.",
+    "deleteFolderConfirm": "Delete this folder? Memories inside will be moved to root.",
+    "titlePlaceholder": "Enter memory title...",
+    "tagPlaceholder": "Enter tag...",
+    "contentPlaceholder": "Write your memory content here...",
+    "searchPlaceholder": "Search titles, content, and tags...",
+    "importSuccess": "Imported {count} files",
+    "importFailed": "Failed to import {count} files"
+  },
+  "help": {
+    "title": "Help & Guidelines",
+    "gettingStarted": "Getting Started",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "memoryCommands": "Memory Commands",
+    "imageGeneration": "Image Generation",
+    "bestPractices": "Best Practices",
+    "personalization": "Personalization",
+    "privacyData": "Privacy & Data",
+    "freeModels": "Free AI models through Puter - no API keys required!",
+    "signInPuter": "Sign in to Puter for free AI models (GPT-4o, Claude, Gemini, etc.)",
+    "attachFiles": "Attach files to your messages for analysis.",
+    "generateImages": "Generate images using AI models. Works in any chat!"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "offline": "You are offline",
+    "apiError": "API error: {message}",
+    "failedTo": "Failed to {action}",
+    "pdfLibraryFailed": "PDF processing library failed to load. Please check your internet connection.",
+    "failedToReadFile": "Failed to read file: {filename}",
+    "failedToConvertPdf": "Failed to convert PDF to images",
+    "failedToExtractText": "Failed to extract text from PDF",
+    "pdfNotLoaded": "PDF.js library not loaded yet. Please try again in a moment.",
+    "analysisFailed": "Analysis failed. Please try again."
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "more": "More",
+    "less": "Less",
+    "all": "All",
+    "none": "None",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "older": "Older"
+  },
+  "imageGen": {
+    "generating": "Generating image...",
+    "generated": "Image generated",
+    "failed": "Failed to generate image",
+    "quality": "Quality",
+    "qualityOptions": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "hd": "HD",
+      "standard": "Standard"
+    }
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "app": {
+    "name": "زروانکس",
+    "tagline": "همراه هوش مصنوعی شما"
+  },
+  "auth": {
+    "signIn": "ورود",
+    "signUp": "ثبت نام",
+    "signOut": "خروج",
+    "continueWithGoogle": "ورود با گوگل",
+    "email": "ایمیل",
+    "password": "رمز عبور",
+    "emailPlaceholder": "email@example.com",
+    "passwordPlaceholder": "رمز عبور خود را وارد کنید",
+    "createAccount": "ایجاد حساب کاربری",
+    "signInToContinue": "برای ادامه وارد شوید",
+    "noAccount": "حساب کاربری ندارید؟",
+    "haveAccount": "قبلاً ثبت نام کرده‌اید؟",
+    "errors": {
+      "enterEmailPassword": "لطفاً ایمیل و رمز عبور را وارد کنید",
+      "noAccount": "حسابی با این ایمیل یافت نشد",
+      "wrongPassword": "رمز عبور اشتباه است",
+      "emailInUse": "این ایمیل قبلاً استفاده شده است",
+      "weakPassword": "رمز عبور باید حداقل ۶ کاراکتر باشد",
+      "authFailed": "احراز هویت ناموفق بود"
+    }
+  },
+  "chat": {
+    "newChat": "گفتگوی جدید",
+    "newConversation": "گفتگوی جدید",
+    "searchChats": "جستجوی گفتگوها",
+    "allChats": "همه گفتگوها",
+    "noConversations": "هنوز گفتگویی وجود ندارد",
+    "noConversationsFound": "گفتگویی یافت نشد",
+    "startTypingToSearch": "برای جستجو تایپ کنید",
+    "messagePlaceholder": "پیام به زروانکس...",
+    "send": "ارسال",
+    "regenerate": "تولید مجدد",
+    "copy": "کپی",
+    "copied": "کپی شد!",
+    "branch": "شاخه",
+    "resend": "ارسال مجدد",
+    "saveThisMoment": "ذخیره این لحظه",
+    "analyze": "تحلیل",
+    "scrollToTop": "رفتن به بالا",
+    "scrollToBottom": "رفتن به پایین",
+    "deleteConversation": "حذف گفتگو",
+    "deleteConfirm": "آیا مطمئن هستید که می‌خواهید این گفتگو را حذف کنید؟ این عمل قابل بازگشت نیست.",
+    "deleteMultipleConfirm": "آیا مطمئن هستید که می‌خواهید {count} گفتگو را حذف کنید؟ این عمل قابل بازگشت نیست.",
+    "cancel": "انصراف",
+    "delete": "حذف",
+    "rename": "تغییر نام",
+    "info": "اطلاعات",
+    "select": "انتخاب",
+    "deselect": "لغو انتخاب",
+    "selected": "{count} انتخاب شده",
+    "clear": "پاک کردن",
+    "seeMore": "مشاهده {count} مورد بیشتر",
+    "conversationInfo": "اطلاعات گفتگو",
+    "title": "عنوان",
+    "totalMessages": "کل پیام‌ها",
+    "yourMessages": "پیام‌های شما",
+    "aiMessages": "پیام‌های هوش مصنوعی",
+    "model": "مدل",
+    "started": "شروع شده",
+    "lastMessage": "آخرین پیام"
+  },
+  "welcome": {
+    "title": "به زروانکس خوش آمدید",
+    "subtitle": "هر سوالی دارید بپرسید، ایده‌پردازی کنید، یا فقط گپ بزنید."
+  },
+  "sidebar": {
+    "expand": "باز کردن نوار کناری",
+    "collapse": "بستن نوار کناری",
+    "settings": "تنظیمات",
+    "searchPlaceholder": "جستجو بر اساس عنوان یا محتوای پیام..."
+  },
+  "input": {
+    "attachFiles": "پیوست فایل",
+    "dropFilesHere": "فایل‌ها را اینجا رها کنید",
+    "filesInfo": "تصاویر، ویدیوها، اسناد (حداکثر ۱۰ مگابایت)",
+    "filesExceedLimit": "برخی فایل‌ها از ۱۰ مگابایت بیشترند",
+    "filesAttached": "{count}/{max} فایل پیوست شده (حداکثر ۱۰ مگابایت)",
+    "removeFile": "حذف {filename}",
+    "voiceInput": "ورودی صوتی (به زودی)",
+    "pdfConverted": "PDF به تصویر تبدیل شد برای تحلیل",
+    "pdfTextExtracted": "متن از PDF استخراج شد - همراه پیام ارسال می‌شود"
+  },
+  "models": {
+    "selectModel": "انتخاب مدل",
+    "pleaseSelectModel": "لطفاً ابتدا یک مدل انتخاب کنید",
+    "freeModels": "مدل‌های رایگان",
+    "contextWindow": "زمینه: {size}",
+    "thinkingMode": "حالت تفکر",
+    "vision": "بینایی"
+  },
+  "settings": {
+    "title": "تنظیمات",
+    "extendedPersonalization": "شخصی‌سازی پیشرفته",
+    "back": "بازگشت",
+    "save": "ذخیره تغییرات",
+    "saving": "در حال ذخیره...",
+    "savedSuccessfully": "تنظیمات با موفقیت ذخیره شد!",
+    "saveFailed": "ذخیره تنظیمات ناموفق بود. لطفاً دوباره تلاش کنید.",
+    "tabs": {
+      "profile": "پروفایل",
+      "personalInfo": "اطلاعات شخصی",
+      "aiStyle": "سبک هوش مصنوعی",
+      "communication": "ارتباطات",
+      "content": "محتوا",
+      "accessibility": "دسترس‌پذیری"
+    },
+    "profile": {
+      "title": "پروفایل",
+      "avatar": "تصویر پروفایل",
+      "avatarHint": "برای آپلود کلیک کنید (حداکثر ۲ مگابایت)",
+      "avatarSizeError": "حجم تصویر باید کمتر از ۲ مگابایت باشد",
+      "nickname": "نام مستعار",
+      "nicknamePlaceholder": "دوست دارید چه صدایتان کنم؟",
+      "displayName": "نام نمایشی",
+      "displayNamePlaceholder": "نام کامل یا نام نمایشی شما",
+      "bio": "درباره من",
+      "bioPlaceholder": "درباره خودتان به هوش مصنوعی بگویید - شخصیت، علایق، کار، یا هر چیزی که می‌خواهید برای مکالمات شخصی‌سازی شده بداند.",
+      "location": "موقعیت مکانی",
+      "locationPlaceholder": "شهر، کشور",
+      "website": "وبسایت",
+      "websitePlaceholder": "https://yoursite.com",
+      "pronouns": "ضمایر",
+      "pronounsPlaceholder": "او/ایشان",
+      "language": "زبان"
+    },
+    "personalInfo": {
+      "title": "اطلاعات شخصی",
+      "occupation": "شغل / نقش",
+      "occupationPlaceholder": "شغل شما چیست؟ این به هوش مصنوعی کمک می‌کند مثال‌ها و توصیه‌های مرتبط‌تری ارائه دهد.",
+      "background": "سابقه و تجربه",
+      "backgroundPlaceholder": "سابقه تحصیلی، تجربه حرفه‌ای، یا هر زمینه مرتبط دیگری.",
+      "goals": "اهداف و آرزوها",
+      "goalsPlaceholder": "در حال تلاش برای چه چیزی هستید؟ اهداف شخصی، حرفه‌ای، یا پروژه‌ها.",
+      "interests": "علایق و سرگرمی‌ها",
+      "interestsPlaceholder": "یک علاقه اضافه کنید...",
+      "skills": "مهارت‌ها و تخصص‌ها",
+      "skillsPlaceholder": "یک مهارت اضافه کنید...",
+      "add": "افزودن"
+    },
+    "aiStyle": {
+      "title": "سبک هوش مصنوعی",
+      "customInstructions": "دستورالعمل‌های سفارشی",
+      "customInstructionsPlaceholder": "هر دستورالعمل خاصی برای نحوه رفتار، پاسخ‌دهی، یا آنچه هوش مصنوعی باید درباره شما بداند اضافه کنید. اینها در هر مکالمه اعمال می‌شوند.",
+      "customInstructionsHint": "مثال: «همیشه کد را با توضیحات شرح بده» یا «به صورت محاوره‌ای پاسخ بده»",
+      "tone": "لحن مکالمه",
+      "tones": {
+        "professional": "حرفه‌ای",
+        "casual": "غیررسمی",
+        "friendly": "دوستانه",
+        "balanced": "متعادل",
+        "encouraging": "تشویق‌کننده",
+        "direct": "مستقیم",
+        "thoughtful": "متفکرانه",
+        "playful": "شوخ"
+      },
+      "formality": "سطح رسمیت",
+      "formalityOptions": {
+        "formal": "رسمی",
+        "casual": "غیررسمی",
+        "adaptive": "تطبیقی"
+      },
+      "responseLength": "طول پاسخ",
+      "responseLengthOptions": {
+        "concise": "مختصر",
+        "detailed": "مفصل",
+        "comprehensive": "جامع"
+      },
+      "technicalDepth": "عمق فنی",
+      "technicalOptions": {
+        "basic": "پایه",
+        "medium": "متوسط",
+        "advanced": "پیشرفته"
+      },
+      "empathy": "سطح همدلی",
+      "empathyOptions": {
+        "low": "کم",
+        "medium": "متوسط",
+        "high": "زیاد"
+      },
+      "humor": "استفاده از طنز و شوخی",
+      "humorHint": "به هوش مصنوعی اجازه دهید از طنز و عبارات غیررسمی مناسب استفاده کند"
+    },
+    "communication": {
+      "title": "ارتباطات",
+      "greetingStyle": "سبک خوشامدگویی",
+      "greetingStyleHint": "نحوه خوشامدگویی در صفحه اصلی",
+      "greetingOptions": {
+        "friendly": "دوستانه",
+        "professional": "حرفه‌ای",
+        "witty": "باهوش",
+        "zen": "آرام",
+        "enthusiastic": "پرانرژی"
+      },
+      "responseLength": "طول پاسخ",
+      "explanationStyle": "سبک توضیح",
+      "explanationOptions": {
+        "examples": "با مثال",
+        "stepByStep": "گام به گام",
+        "conceptual": "مفهومی"
+      },
+      "feedbackStyle": "سبک بازخورد",
+      "feedbackOptions": {
+        "direct": "مستقیم",
+        "constructive": "سازنده",
+        "encouraging": "تشویق‌کننده"
+      }
+    },
+    "content": {
+      "title": "تنظیمات محتوا",
+      "topics": "موضوعات مورد علاقه",
+      "topicsPlaceholder": "یک موضوع اضافه کنید...",
+      "expertise": "حوزه‌های تخصص",
+      "expertisePlaceholder": "یک حوزه تخصص اضافه کنید...",
+      "preferredExamples": "نوع مثال‌های ترجیحی",
+      "exampleOptions": {
+        "theoretical": "نظری",
+        "realWorld": "دنیای واقعی",
+        "mixed": "ترکیبی"
+      }
+    },
+    "accessibility": {
+      "title": "دسترس‌پذیری",
+      "fontSize": "اندازه فونت",
+      "fontSizeHint": "تغییرات فوراً اعمال می‌شوند",
+      "fontSizes": {
+        "small": "کوچک",
+        "medium": "متوسط",
+        "large": "بزرگ"
+      },
+      "highContrast": "حالت کنتراست بالا",
+      "highContrastHint": "افزایش کنتراست برای دید بهتر",
+      "screenReader": "سازگار با صفحه‌خوان",
+      "screenReaderHint": "بهینه‌سازی رابط برای صفحه‌خوان‌ها",
+      "reducedMotion": "کاهش حرکت",
+      "reducedMotionHint": "به حداقل رساندن انیمیشن‌ها و تغییرات"
+    },
+    "languages": {
+      "en": "انگلیسی",
+      "fa": "فارسی",
+      "fr": "فرانسوی"
+    }
+  },
+  "memory": {
+    "title": "حافظه",
+    "createNew": "ایجاد حافظه جدید",
+    "edit": "ویرایش حافظه",
+    "delete": "حذف",
+    "deleteConfirm": "این حافظه حذف شود؟ این عمل قابل بازگشت نیست.",
+    "deleteFolderConfirm": "این پوشه حذف شود؟ حافظه‌های داخل آن به ریشه منتقل می‌شوند.",
+    "titlePlaceholder": "عنوان حافظه را وارد کنید...",
+    "tagPlaceholder": "برچسب را وارد کنید...",
+    "contentPlaceholder": "محتوای حافظه را اینجا بنویسید...",
+    "searchPlaceholder": "جستجو در عناوین، محتوا و برچسب‌ها...",
+    "importSuccess": "{count} فایل وارد شد",
+    "importFailed": "وارد کردن {count} فایل ناموفق بود"
+  },
+  "help": {
+    "title": "راهنما و دستورالعمل‌ها",
+    "gettingStarted": "شروع کار",
+    "keyboardShortcuts": "میانبرهای صفحه‌کلید",
+    "memoryCommands": "دستورات حافظه",
+    "imageGeneration": "تولید تصویر",
+    "bestPractices": "بهترین روش‌ها",
+    "personalization": "شخصی‌سازی",
+    "privacyData": "حریم خصوصی و داده‌ها",
+    "freeModels": "مدل‌های هوش مصنوعی رایگان از طریق Puter - بدون نیاز به کلید API!",
+    "signInPuter": "برای مدل‌های رایگان (GPT-4o، Claude، Gemini و غیره) وارد Puter شوید",
+    "attachFiles": "فایل‌ها را به پیام‌های خود برای تحلیل پیوست کنید.",
+    "generateImages": "با استفاده از مدل‌های هوش مصنوعی تصویر بسازید. در هر گفتگویی کار می‌کند!"
+  },
+  "errors": {
+    "generic": "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
+    "network": "خطای شبکه. لطفاً اتصال خود را بررسی کنید.",
+    "offline": "آفلاین هستید",
+    "apiError": "خطای API: {message}",
+    "failedTo": "{action} ناموفق بود",
+    "pdfLibraryFailed": "بارگذاری کتابخانه پردازش PDF ناموفق بود. لطفاً اتصال اینترنت خود را بررسی کنید.",
+    "failedToReadFile": "خواندن فایل ناموفق بود: {filename}",
+    "failedToConvertPdf": "تبدیل PDF به تصویر ناموفق بود",
+    "failedToExtractText": "استخراج متن از PDF ناموفق بود",
+    "pdfNotLoaded": "کتابخانه PDF.js هنوز بارگذاری نشده. لطفاً لحظه‌ای دیگر تلاش کنید.",
+    "analysisFailed": "تحلیل ناموفق بود. لطفاً دوباره تلاش کنید."
+  },
+  "common": {
+    "loading": "در حال بارگذاری...",
+    "save": "ذخیره",
+    "cancel": "انصراف",
+    "delete": "حذف",
+    "edit": "ویرایش",
+    "add": "افزودن",
+    "remove": "حذف",
+    "close": "بستن",
+    "confirm": "تأیید",
+    "yes": "بله",
+    "no": "خیر",
+    "ok": "باشه",
+    "search": "جستجو",
+    "filter": "فیلتر",
+    "sort": "مرتب‌سازی",
+    "more": "بیشتر",
+    "less": "کمتر",
+    "all": "همه",
+    "none": "هیچ‌کدام",
+    "today": "امروز",
+    "yesterday": "دیروز",
+    "thisWeek": "این هفته",
+    "thisMonth": "این ماه",
+    "older": "قدیمی‌تر"
+  },
+  "imageGen": {
+    "generating": "در حال تولید تصویر...",
+    "generated": "تصویر تولید شد",
+    "failed": "تولید تصویر ناموفق بود",
+    "quality": "کیفیت",
+    "qualityOptions": {
+      "low": "پایین",
+      "medium": "متوسط",
+      "high": "بالا",
+      "hd": "اچ‌دی",
+      "standard": "استاندارد"
+    }
+  }
+}

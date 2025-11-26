@@ -1,0 +1,329 @@
+{
+  "app": {
+    "name": "Zurvanex",
+    "tagline": "Votre Compagnon IA"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "signOut": "Se déconnecter",
+    "continueWithGoogle": "Continuer avec Google",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "emailPlaceholder": "vous@exemple.com",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "createAccount": "Créez votre compte",
+    "signInToContinue": "Connectez-vous pour continuer",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "errors": {
+      "enterEmailPassword": "Veuillez entrer votre e-mail et mot de passe",
+      "noAccount": "Aucun compte trouvé avec cet e-mail",
+      "wrongPassword": "Mot de passe incorrect",
+      "emailInUse": "E-mail déjà utilisé",
+      "weakPassword": "Le mot de passe doit contenir au moins 6 caractères",
+      "authFailed": "Échec de l'authentification"
+    }
+  },
+  "chat": {
+    "newChat": "Nouvelle conversation",
+    "newConversation": "Nouvelle Conversation",
+    "searchChats": "Rechercher les conversations",
+    "allChats": "Toutes les conversations",
+    "noConversations": "Pas encore de conversations",
+    "noConversationsFound": "Aucune conversation trouvée",
+    "startTypingToSearch": "Commencez à taper pour rechercher",
+    "messagePlaceholder": "Message à Zurvanex...",
+    "send": "Envoyer",
+    "regenerate": "Régénérer",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "branch": "Branche",
+    "resend": "Renvoyer",
+    "saveThisMoment": "Sauvegarder ce moment",
+    "analyze": "Analyser",
+    "scrollToTop": "Défiler vers le haut",
+    "scrollToBottom": "Défiler vers le bas",
+    "deleteConversation": "Supprimer la conversation",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.",
+    "deleteMultipleConfirm": "Êtes-vous sûr de vouloir supprimer {count} conversations ? Cette action est irréversible.",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "rename": "Renommer",
+    "info": "Info",
+    "select": "Sélectionner",
+    "deselect": "Désélectionner",
+    "selected": "{count} sélectionné(s)",
+    "clear": "Effacer",
+    "seeMore": "Voir {count} de plus",
+    "conversationInfo": "Info de conversation",
+    "title": "Titre",
+    "totalMessages": "Messages totaux",
+    "yourMessages": "Vos messages",
+    "aiMessages": "Messages IA",
+    "model": "Modèle",
+    "started": "Commencé",
+    "lastMessage": "Dernier message"
+  },
+  "welcome": {
+    "title": "Bienvenue sur Zurvanex",
+    "subtitle": "Posez-moi n'importe quelle question, brainstormez des idées, ou discutez simplement."
+  },
+  "sidebar": {
+    "expand": "Développer la barre latérale",
+    "collapse": "Réduire la barre latérale",
+    "settings": "Paramètres",
+    "searchPlaceholder": "Rechercher par titre ou contenu..."
+  },
+  "input": {
+    "attachFiles": "Joindre des fichiers",
+    "dropFilesHere": "Déposez les fichiers ici",
+    "filesInfo": "Images, vidéos, documents (max 10 Mo chacun)",
+    "filesExceedLimit": "Certains fichiers dépassent la limite de 10 Mo",
+    "filesAttached": "{count}/{max} fichiers joints (max 10 Mo chacun)",
+    "removeFile": "Supprimer {filename}",
+    "voiceInput": "Entrée vocale (Bientôt disponible)",
+    "pdfConverted": "PDF converti en images pour analyse visuelle",
+    "pdfTextExtracted": "Texte extrait du grand PDF - sera inclus avec votre message"
+  },
+  "models": {
+    "selectModel": "Sélectionner un modèle",
+    "pleaseSelectModel": "Veuillez d'abord sélectionner un modèle",
+    "freeModels": "Modèles Gratuits",
+    "contextWindow": "Contexte : {size}",
+    "thinkingMode": "Mode Réflexion",
+    "vision": "Vision"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "extendedPersonalization": "Personnalisation Étendue",
+    "back": "Retour",
+    "save": "Enregistrer les modifications",
+    "saving": "Enregistrement...",
+    "savedSuccessfully": "Paramètres enregistrés avec succès !",
+    "saveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+    "tabs": {
+      "profile": "Profil",
+      "personalInfo": "Infos Personnelles",
+      "aiStyle": "Style IA",
+      "communication": "Communication",
+      "content": "Contenu",
+      "accessibility": "Accessibilité"
+    },
+    "profile": {
+      "title": "Profil",
+      "avatar": "Photo de profil",
+      "avatarHint": "Cliquez pour télécharger (max 2 Mo)",
+      "avatarSizeError": "La taille de l'image doit être inférieure à 2 Mo",
+      "nickname": "Surnom",
+      "nicknamePlaceholder": "Comment aimeriez-vous être appelé ?",
+      "displayName": "Nom d'affichage",
+      "displayNamePlaceholder": "Votre nom complet ou nom d'affichage",
+      "bio": "Bio",
+      "bioPlaceholder": "Parlez de vous à l'IA - votre personnalité, intérêts, travail, ou tout ce que vous aimeriez qu'elle sache pour des conversations plus personnalisées.",
+      "location": "Localisation",
+      "locationPlaceholder": "Ville, Pays",
+      "website": "Site web",
+      "websitePlaceholder": "https://votresite.com",
+      "pronouns": "Pronoms",
+      "pronounsPlaceholder": "il/lui, elle, etc.",
+      "language": "Langue"
+    },
+    "personalInfo": {
+      "title": "Informations Personnelles",
+      "occupation": "Profession / Rôle",
+      "occupationPlaceholder": "Que faites-vous dans la vie ? Cela aide l'IA à fournir des exemples et conseils plus pertinents.",
+      "background": "Parcours et Expérience",
+      "backgroundPlaceholder": "Votre formation, expérience professionnelle, ou tout contexte pertinent.",
+      "goals": "Objectifs et Aspirations",
+      "goalsPlaceholder": "Vers quoi travaillez-vous ? Objectifs personnels, aspirations professionnelles, ou projets.",
+      "interests": "Intérêts et Loisirs",
+      "interestsPlaceholder": "Ajouter un intérêt...",
+      "skills": "Compétences et Expertise",
+      "skillsPlaceholder": "Ajouter une compétence...",
+      "add": "Ajouter"
+    },
+    "aiStyle": {
+      "title": "Style IA",
+      "customInstructions": "Instructions Personnalisées",
+      "customInstructionsPlaceholder": "Ajoutez des instructions spécifiques sur la façon dont l'IA devrait se comporter, répondre, ou ce qu'elle devrait savoir sur vous. Celles-ci seront incluses dans chaque conversation.",
+      "customInstructionsHint": "Exemple : \"Toujours expliquer le code avec des commentaires\" ou \"Répondre sur un ton conversationnel\"",
+      "tone": "Ton de Conversation",
+      "tones": {
+        "professional": "Professionnel",
+        "casual": "Décontracté",
+        "friendly": "Amical",
+        "balanced": "Équilibré",
+        "encouraging": "Encourageant",
+        "direct": "Direct",
+        "thoughtful": "Réfléchi",
+        "playful": "Enjoué"
+      },
+      "formality": "Niveau de Formalité",
+      "formalityOptions": {
+        "formal": "Formel",
+        "casual": "Décontracté",
+        "adaptive": "Adaptatif"
+      },
+      "responseLength": "Longueur de Réponse",
+      "responseLengthOptions": {
+        "concise": "Concis",
+        "detailed": "Détaillé",
+        "comprehensive": "Complet"
+      },
+      "technicalDepth": "Profondeur Technique",
+      "technicalOptions": {
+        "basic": "Basique",
+        "medium": "Moyen",
+        "advanced": "Avancé"
+      },
+      "empathy": "Niveau d'Empathie",
+      "empathyOptions": {
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      },
+      "humor": "Utiliser l'Humour",
+      "humorHint": "Permettre à l'IA d'utiliser un humour approprié et des expressions décontractées"
+    },
+    "communication": {
+      "title": "Communication",
+      "greetingStyle": "Style de Salutation",
+      "greetingStyleHint": "Comment je vous salue sur l'écran d'accueil",
+      "greetingOptions": {
+        "friendly": "Amical",
+        "professional": "Professionnel",
+        "witty": "Spirituel",
+        "zen": "Zen",
+        "enthusiastic": "Enthousiaste"
+      },
+      "responseLength": "Longueur de Réponse",
+      "explanationStyle": "Style d'Explication",
+      "explanationOptions": {
+        "examples": "Exemples",
+        "stepByStep": "Étape par Étape",
+        "conceptual": "Conceptuel"
+      },
+      "feedbackStyle": "Style de Retour",
+      "feedbackOptions": {
+        "direct": "Direct",
+        "constructive": "Constructif",
+        "encouraging": "Encourageant"
+      }
+    },
+    "content": {
+      "title": "Préférences de Contenu",
+      "topics": "Sujets d'Intérêt",
+      "topicsPlaceholder": "Ajouter un sujet...",
+      "expertise": "Domaines d'Expertise",
+      "expertisePlaceholder": "Ajouter un domaine d'expertise...",
+      "preferredExamples": "Types d'Exemples Préférés",
+      "exampleOptions": {
+        "theoretical": "Théorique",
+        "realWorld": "Monde Réel",
+        "mixed": "Mixte"
+      }
+    },
+    "accessibility": {
+      "title": "Accessibilité",
+      "fontSize": "Taille de Police",
+      "fontSizeHint": "Les changements s'appliquent immédiatement",
+      "fontSizes": {
+        "small": "Petite",
+        "medium": "Moyenne",
+        "large": "Grande"
+      },
+      "highContrast": "Mode Contraste Élevé",
+      "highContrastHint": "Augmenter le contraste pour une meilleure visibilité",
+      "screenReader": "Compatible Lecteur d'Écran",
+      "screenReaderHint": "Optimiser l'interface pour les lecteurs d'écran",
+      "reducedMotion": "Mouvement Réduit",
+      "reducedMotionHint": "Minimiser les animations et transitions"
+    },
+    "languages": {
+      "en": "Anglais",
+      "fa": "Persan",
+      "fr": "Français"
+    }
+  },
+  "memory": {
+    "title": "Mémoire",
+    "createNew": "Créer une Nouvelle Mémoire",
+    "edit": "Modifier la Mémoire",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer cette mémoire ? Cette action est irréversible.",
+    "deleteFolderConfirm": "Supprimer ce dossier ? Les mémoires à l'intérieur seront déplacées à la racine.",
+    "titlePlaceholder": "Entrez le titre de la mémoire...",
+    "tagPlaceholder": "Entrez un tag...",
+    "contentPlaceholder": "Écrivez le contenu de votre mémoire ici...",
+    "searchPlaceholder": "Rechercher titres, contenu et tags...",
+    "importSuccess": "{count} fichiers importés",
+    "importFailed": "Échec de l'importation de {count} fichiers"
+  },
+  "help": {
+    "title": "Aide et Directives",
+    "gettingStarted": "Commencer",
+    "keyboardShortcuts": "Raccourcis Clavier",
+    "memoryCommands": "Commandes Mémoire",
+    "imageGeneration": "Génération d'Images",
+    "bestPractices": "Meilleures Pratiques",
+    "personalization": "Personnalisation",
+    "privacyData": "Confidentialité et Données",
+    "freeModels": "Modèles IA gratuits via Puter - aucune clé API requise !",
+    "signInPuter": "Connectez-vous à Puter pour des modèles IA gratuits (GPT-4o, Claude, Gemini, etc.)",
+    "attachFiles": "Joignez des fichiers à vos messages pour analyse.",
+    "generateImages": "Générez des images avec des modèles IA. Fonctionne dans n'importe quelle conversation !"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "offline": "Vous êtes hors ligne",
+    "apiError": "Erreur API : {message}",
+    "failedTo": "Échec de {action}",
+    "pdfLibraryFailed": "Échec du chargement de la bibliothèque PDF. Veuillez vérifier votre connexion internet.",
+    "failedToReadFile": "Échec de lecture du fichier : {filename}",
+    "failedToConvertPdf": "Échec de conversion du PDF en images",
+    "failedToExtractText": "Échec d'extraction du texte du PDF",
+    "pdfNotLoaded": "Bibliothèque PDF.js pas encore chargée. Veuillez réessayer dans un moment.",
+    "analysisFailed": "Échec de l'analyse. Veuillez réessayer."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "sort": "Trier",
+    "more": "Plus",
+    "less": "Moins",
+    "all": "Tout",
+    "none": "Aucun",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "thisWeek": "Cette Semaine",
+    "thisMonth": "Ce Mois",
+    "older": "Plus Ancien"
+  },
+  "imageGen": {
+    "generating": "Génération de l'image...",
+    "generated": "Image générée",
+    "failed": "Échec de génération de l'image",
+    "quality": "Qualité",
+    "qualityOptions": {
+      "low": "Basse",
+      "medium": "Moyenne",
+      "high": "Haute",
+      "hd": "HD",
+      "standard": "Standard"
+    }
+  }
+}

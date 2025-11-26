@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import UserProfile from './UserProfile';
 import Settings from './Settings';
 import ConversationAnalysisModal from './ConversationAnalysisModal';
@@ -31,6 +32,7 @@ export default function Sidebar({
   className = '',
 }: SidebarProps) {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,10 +87,10 @@ export default function Sidebar({
   }, [conversations]);
 
   const titles = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    lastWeek: 'Previous 7 Days',
-    older: 'Older',
+    today: t('common.today'),
+    yesterday: t('common.yesterday'),
+    lastWeek: t('common.thisWeek'),
+    older: t('common.older'),
   };
 
   // Filter conversations based on search query
@@ -602,7 +604,7 @@ export default function Sidebar({
                 width: '32px',
                 height: '32px',
               }}
-              title="New chat"
+              title={t('chat.newChat')}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -624,7 +626,7 @@ export default function Sidebar({
                 width: '32px',
                 height: '32px',
               }}
-              title="Search chats"
+              title={t('chat.searchChats')}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -646,7 +648,7 @@ export default function Sidebar({
                 width: '32px',
                 height: '32px',
               }}
-              title="All chats"
+              title={t('chat.allChats')}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -672,7 +674,7 @@ export default function Sidebar({
                 width: '32px',
                 height: '32px',
               }}
-              title="Settings"
+              title={t('sidebar.settings')}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -923,7 +925,7 @@ export default function Sidebar({
               <input
                 type="text"
                 className="search-modal-input"
-                placeholder="Search by title or message content..."
+                placeholder={t('sidebar.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

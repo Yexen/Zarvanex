@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useI18n } from '@/lib/i18n';
 import type { UserPreferences } from '@/types';
 
 interface SettingsExtendedProps {
@@ -70,6 +71,7 @@ function ChipSelector({
 export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedProps) {
   const { user } = useAuth();
   const { preferences, loading, updatePreferences } = useUserPreferences(user?.id || null);
+  const { t, language, setLanguage } = useI18n();
 
   const [activeTab, setActiveTab] = useState('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -279,7 +281,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
   const tabs = [
     {
       id: 'profile',
-      label: 'Profile',
+      label: t('settings.tabs.profile'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -288,7 +290,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     },
     {
       id: 'personal',
-      label: 'Personal Info',
+      label: t('settings.tabs.personalInfo'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -297,7 +299,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     },
     {
       id: 'ai_style',
-      label: 'AI Style',
+      label: t('settings.tabs.aiStyle'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -306,7 +308,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     },
     {
       id: 'communication',
-      label: 'Communication',
+      label: t('settings.tabs.communication'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -315,7 +317,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     },
     {
       id: 'content',
-      label: 'Content',
+      label: t('settings.tabs.content'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -324,7 +326,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
     },
     {
       id: 'accessibility',
-      label: 'Accessibility',
+      label: t('settings.tabs.accessibility'),
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -336,76 +338,76 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
 
   // Tone options
   const toneOptions = [
-    { value: 'professional', label: 'Professional', description: 'Formal and business-like' },
-    { value: 'casual', label: 'Casual', description: 'Relaxed and informal' },
-    { value: 'friendly', label: 'Friendly', description: 'Warm and approachable' },
-    { value: 'balanced', label: 'Balanced', description: 'Mix of formal and casual' },
-    { value: 'encouraging', label: 'Encouraging', description: 'Supportive and motivating' },
-    { value: 'direct', label: 'Direct', description: 'Straightforward and concise' },
-    { value: 'thoughtful', label: 'Thoughtful', description: 'Reflective and considerate' },
-    { value: 'playful', label: 'Playful', description: 'Fun and lighthearted' },
+    { value: 'professional', label: t('settings.aiStyle.tones.professional') },
+    { value: 'casual', label: t('settings.aiStyle.tones.casual') },
+    { value: 'friendly', label: t('settings.aiStyle.tones.friendly') },
+    { value: 'balanced', label: t('settings.aiStyle.tones.balanced') },
+    { value: 'encouraging', label: t('settings.aiStyle.tones.encouraging') },
+    { value: 'direct', label: t('settings.aiStyle.tones.direct') },
+    { value: 'thoughtful', label: t('settings.aiStyle.tones.thoughtful') },
+    { value: 'playful', label: t('settings.aiStyle.tones.playful') },
   ];
 
   const formalityOptions = [
-    { value: 'formal', label: 'Formal', description: 'Always professional' },
-    { value: 'casual', label: 'Casual', description: 'Always relaxed' },
-    { value: 'adaptive', label: 'Adaptive', description: 'Matches your style' },
+    { value: 'formal', label: t('settings.aiStyle.formalityOptions.formal') },
+    { value: 'casual', label: t('settings.aiStyle.formalityOptions.casual') },
+    { value: 'adaptive', label: t('settings.aiStyle.formalityOptions.adaptive') },
   ];
 
   const verbosityOptions = [
-    { value: 'concise', label: 'Concise', description: 'Brief and to the point' },
-    { value: 'detailed', label: 'Detailed', description: 'Thorough explanations' },
-    { value: 'comprehensive', label: 'Comprehensive', description: 'Full coverage' },
+    { value: 'concise', label: t('settings.aiStyle.responseLengthOptions.concise') },
+    { value: 'detailed', label: t('settings.aiStyle.responseLengthOptions.detailed') },
+    { value: 'comprehensive', label: t('settings.aiStyle.responseLengthOptions.comprehensive') },
   ];
 
   const technicalOptions = [
-    { value: 'basic', label: 'Basic', description: 'Simple explanations' },
-    { value: 'medium', label: 'Medium', description: 'Moderate detail' },
-    { value: 'advanced', label: 'Advanced', description: 'Technical depth' },
+    { value: 'basic', label: t('settings.aiStyle.technicalOptions.basic') },
+    { value: 'medium', label: t('settings.aiStyle.technicalOptions.medium') },
+    { value: 'advanced', label: t('settings.aiStyle.technicalOptions.advanced') },
   ];
 
   const empathyOptions = [
-    { value: 'low', label: 'Low', description: 'Factual and objective' },
-    { value: 'medium', label: 'Medium', description: 'Balanced approach' },
-    { value: 'high', label: 'High', description: 'Very supportive' },
+    { value: 'low', label: t('settings.aiStyle.empathyOptions.low') },
+    { value: 'medium', label: t('settings.aiStyle.empathyOptions.medium') },
+    { value: 'high', label: t('settings.aiStyle.empathyOptions.high') },
   ];
 
   const greetingOptions = [
-    { value: 'friendly', label: 'Friendly', description: 'Warm and casual' },
-    { value: 'professional', label: 'Professional', description: 'Polished and formal' },
-    { value: 'witty', label: 'Witty', description: 'Clever and humorous' },
-    { value: 'zen', label: 'Zen', description: 'Calm and mindful' },
-    { value: 'enthusiastic', label: 'Enthusiastic', description: 'Energetic and upbeat' },
+    { value: 'friendly', label: t('settings.communication.greetingOptions.friendly') },
+    { value: 'professional', label: t('settings.communication.greetingOptions.professional') },
+    { value: 'witty', label: t('settings.communication.greetingOptions.witty') },
+    { value: 'zen', label: t('settings.communication.greetingOptions.zen') },
+    { value: 'enthusiastic', label: t('settings.communication.greetingOptions.enthusiastic') },
   ];
 
   const responseLengthOptions = [
-    { value: 'brief', label: 'Brief', description: 'Short answers' },
-    { value: 'detailed', label: 'Detailed', description: 'Thorough responses' },
-    { value: 'comprehensive', label: 'Comprehensive', description: 'Full explanations' },
+    { value: 'brief', label: t('settings.aiStyle.responseLengthOptions.concise') },
+    { value: 'detailed', label: t('settings.aiStyle.responseLengthOptions.detailed') },
+    { value: 'comprehensive', label: t('settings.aiStyle.responseLengthOptions.comprehensive') },
   ];
 
   const explanationOptions = [
-    { value: 'examples', label: 'Examples', description: 'Learn by example' },
-    { value: 'step_by_step', label: 'Step by Step', description: 'Sequential guide' },
-    { value: 'conceptual', label: 'Conceptual', description: 'Theory focused' },
+    { value: 'examples', label: t('settings.communication.explanationOptions.examples') },
+    { value: 'step_by_step', label: t('settings.communication.explanationOptions.stepByStep') },
+    { value: 'conceptual', label: t('settings.communication.explanationOptions.conceptual') },
   ];
 
   const feedbackOptions = [
-    { value: 'direct', label: 'Direct', description: 'Straightforward' },
-    { value: 'constructive', label: 'Constructive', description: 'Helpful critique' },
-    { value: 'encouraging', label: 'Encouraging', description: 'Supportive tone' },
+    { value: 'direct', label: t('settings.communication.feedbackOptions.direct') },
+    { value: 'constructive', label: t('settings.communication.feedbackOptions.constructive') },
+    { value: 'encouraging', label: t('settings.communication.feedbackOptions.encouraging') },
   ];
 
   const languageOptions = [
-    { value: 'en', label: 'English', description: 'English language' },
-    { value: 'fa', label: 'فارسی', description: 'Persian language' },
-    { value: 'fr', label: 'Français', description: 'French language' },
+    { value: 'en', label: t('settings.languages.en') },
+    { value: 'fa', label: t('settings.languages.fa') },
+    { value: 'fr', label: t('settings.languages.fr') },
   ];
 
   const fontSizeOptions = [
-    { value: 'small', label: 'Small', description: '14px base size' },
-    { value: 'medium', label: 'Medium', description: '16px base size' },
-    { value: 'large', label: 'Large', description: '18px base size' },
+    { value: 'small', label: t('settings.accessibility.fontSizes.small') },
+    { value: 'medium', label: t('settings.accessibility.fontSizes.medium') },
+    { value: 'large', label: t('settings.accessibility.fontSizes.large') },
   ];
 
   return (
@@ -449,9 +451,9 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back
+              {t('settings.back')}
             </button>
-            <h3 className="search-modal-title">Extended Personalization</h3>
+            <h3 className="search-modal-title">{t('settings.extendedPersonalization')}</h3>
           </div>
           <button
             className="search-modal-close"
@@ -718,12 +720,15 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
                     {/* Language Selection */}
                     <div style={{ marginTop: '32px' }}>
                       <label style={{ display: 'block', color: 'var(--gray-med)', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
-                        Language
+                        {t('settings.profile.language')}
                       </label>
                       <ChipSelector
                         options={languageOptions}
-                        value={formData.language}
-                        onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                        value={language}
+                        onChange={(value) => {
+                          setLanguage(value as 'en' | 'fa' | 'fr');
+                          setFormData(prev => ({ ...prev, language: value }));
+                        }}
                         columns={3}
                       />
                     </div>
@@ -1497,7 +1502,7 @@ export default function SettingsExtended({ isOpen, onClose }: SettingsExtendedPr
                         transition: 'all 0.2s',
                       }}
                     >
-                      {saving ? 'Saving...' : 'Save All Changes'}
+                      {saving ? t('settings.saving') : t('settings.save')}
                     </button>
                   </div>
                 </div>
