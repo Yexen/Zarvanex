@@ -19,6 +19,7 @@ import { PUTER_MODELS, sendPuterMessage } from '@/lib/puter';
 import type { Conversation, Message, Model } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { compressImages, needsCompression, formatSize } from '@/utils/imageCompression';
+import { processMediaFiles, needsMediaCompression, getMediaCollectionSize } from '@/utils/mediaCompression';
 import { useConversations } from '@/hooks/useConversations';
 import { UserPreferencesProvider, useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 import { extractionTrigger } from '@/lib/memory/extractionTrigger';
@@ -989,37 +990,61 @@ function ChatInterfaceInner() {
     const isFirstMessage = !conversation || conversation.messages.length === 0;
     const firstUserMessage = content; // Save for title generation later
 
-    // Handle image compression for Supabase storage
-    let imagesToSave = images;
-    let processedImagesForAI = images; // Keep original for AI models
+    // Handle comprehensive media compression for Supabase storage
+    let mediaToSave = images;
+    let processedMediaForAI = images; // Keep original for AI models
     
     if (images && images.length > 0) {
-      const messageNeedsCompression = needsCompression(images, content);
-      console.log(`Message size check: ${messageNeedsCompression ? 'needs compression' : 'within limits'}`);
+      const messageNeedsCompression = needsMediaCompression(images, content);
+      const mediaSize = getMediaCollectionSize(images);
+      
+      console.log(`Message size check: ${messageNeedsCompression ? 'needs compression' : 'within limits'} ` +
+        `(${mediaSize.formattedSize} total)`);
       
       if (messageNeedsCompression) {
         try {
-          console.log('[INFO] Compressing images for Supabase storage...');
-          const compressionResults = await compressImages(images, 700 * 1024); // 700KB per image
+          console.log('[INFO] Processing media files for Supabase storage...');
           
-          const compressedImages = compressionResults.map(result => result.compressed);
-          const totalSavings = compressionResults.reduce((acc, result) => 
-            acc + (result.originalSize - result.compressedSize), 0);
+          // For now, we'll treat all as generic files since we don't have filename/mimetype context
+          // In a real scenario, this info would come from ChatInput
+          const filenames = images.map((_, index) => `attachment_${index + 1}`);
+          const mimeTypes = images.map(img => {
+            if (img.startsWith('data:image/')) return img.split(';')[0].split(':')[1];
+            if (img.startsWith('data:video/')) return img.split(';')[0].split(':')[1];
+            return 'application/octet-stream';
+          });
           
-          console.log(`[INFO] Images compressed: ${formatSize(totalSavings)} saved, ` +
-            `${compressionResults.length} images processed`);
+          const mediaResults = await processMediaFiles(images, filenames, mimeTypes);
           
-          // Use compressed images for database storage
-          imagesToSave = compressedImages;
+          const totalOriginalSize = mediaResults.compressionResults.reduce(
+            (acc, result) => acc + result.metadata.originalSize, 0);
+          const totalCompressedSize = mediaResults.compressionResults.reduce(
+            (acc, result) => acc + (result.metadata.compressedSize || result.metadata.thumbnailSize || 0), 0);
+          const totalSavings = totalOriginalSize - totalCompressedSize;
           
-          // Keep original high-quality images for AI models
-          processedImagesForAI = images;
+          console.log(`[INFO] Media processed: ${formatSize(totalSavings)} saved, ` +
+            `${mediaResults.compressionResults.length} files processed`);
+          
+          // Log compression details
+          mediaResults.compressionResults.forEach((result, index) => {
+            if (result.error) {
+              console.warn(`[WARN] File ${index + 1} (${result.metadata.filename}): ${result.error}`);
+            } else {
+              console.log(`[INFO] File ${index + 1}: ${result.metadata.summary}`);
+            }
+          });
+          
+          // Use compressed/processed media for database storage
+          mediaToSave = mediaResults.forDatabase.filter(Boolean) as string[];
+          
+          // Keep original high-quality media for AI models
+          processedMediaForAI = mediaResults.forAI;
           
         } catch (compressionError) {
-          console.error('[ERROR] Image compression failed:', compressionError);
-          console.log('[WARNING] Images too large for Supabase, saving text only');
-          imagesToSave = undefined; // Fallback: don't save images to database
-          processedImagesForAI = images; // Still send to AI models
+          console.error('[ERROR] Media compression failed:', compressionError);
+          console.log('[WARNING] Media too large for Supabase, saving text only');
+          mediaToSave = undefined; // Fallback: don't save media to database
+          processedMediaForAI = images; // Still send to AI models
         }
       }
     }
@@ -1029,12 +1054,12 @@ function ChatInterfaceInner() {
       role: 'user',
       content,
       timestamp: new Date(),
-      images: imagesToSave, // Only save if under 1MB limit
+      images: mediaToSave, // Only save compressed/processed media to database
     };
 
     // Add user message to database (with temporary title if first message)
     try {
-      console.log('Adding user message to database...', { conversationId, hasImages: !!imagesToSave?.length });
+      console.log('Adding user message to database...', { conversationId, hasMedia: !!mediaToSave?.length });
       console.log('Current conversations in state:', conversations.length);
       console.log('Active conversation found:', !!conversations.find(c => c.id === conversationId));
       await addMessage(conversationId, userMessage, isFirstMessage ? 'New Conversation' : undefined);
@@ -1060,10 +1085,10 @@ function ChatInterfaceInner() {
       // Get updated conversation with the user message
       const updatedConversation = conversations.find((c) => c.id === conversationId);
       
-      // Create a message with original images for AI models (better quality)
+      // Create a message with original media for AI models (better quality)
       const userMessageForAI: Message = {
         ...userMessage,
-        images: processedImagesForAI, // Use original high-quality images
+        images: processedMediaForAI, // Use original high-quality media
       };
       
       const allMessages = updatedConversation
