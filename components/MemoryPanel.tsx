@@ -41,6 +41,21 @@ export default function MemoryPanel() {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState<Memory[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [importProgress, setImportProgress] = useState<{
+    isImporting: boolean;
+    current: number;
+    total: number;
+    currentItem: string;
+    status: 'importing' | 'success' | 'error';
+    message?: string;
+  }>({
+    isImporting: false,
+    current: 0,
+    total: 0,
+    currentItem: '',
+    status: 'importing'
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
@@ -396,6 +411,115 @@ export default function MemoryPanel() {
     }
   }, []);
 
+  const handleToggleSelection = useCallback((nodeId: string, type: 'folder' | 'memory') => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = new Set<string>();
+    // Add all folder IDs
+    folders.forEach(folder => allIds.add(folder.id));
+    // Add all memory IDs
+    memories.forEach(memory => allIds.add(memory.id));
+    setSelectedItems(allIds);
+  }, [folders, memories]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedItems(new Set());
+  }, []);
+
+  const handleBatchDelete = useCallback(async () => {
+    if (selectedItems.size === 0) return;
+
+    const confirmed = confirm(`Delete ${selectedItems.size} selected items? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    let deleted = 0;
+    let failed = 0;
+
+    for (const itemId of selectedItems) {
+      try {
+        // Check if it's a folder or memory
+        const isFolder = folders.some(f => f.id === itemId);
+        const type = isFolder ? 'folder' : 'memory';
+
+        if (type === 'folder') {
+          if (isSupabaseAvailable() && user?.id) {
+            await hardMemorySupabase.deleteFolder(itemId, user.id);
+          } else {
+            await memoryStorage.deleteFolder(itemId);
+          }
+        } else {
+          if (isSupabaseAvailable()) {
+            await hardMemorySupabase.deleteMemory(itemId);
+          } else {
+            await memoryStorage.deleteMemory(itemId);
+          }
+          await invalidateCacheForChunk(itemId);
+        }
+        deleted++;
+      } catch (error) {
+        console.error(`Error deleting item ${itemId}:`, error);
+        failed++;
+      }
+    }
+
+    alert(`✅ Deleted ${deleted} items${failed > 0 ? `, ${failed} failed` : ''}`);
+    setSelectedItems(new Set());
+    await loadData();
+  }, [selectedItems, folders, user?.id]);
+
+  const handleBatchMove = useCallback(async () => {
+    if (selectedItems.size === 0) return;
+
+    // Show folder picker dialog using prompt (we'll make this nicer later)
+    const folderNames = folders.map(f => `${f.id}: ${f.name}`).join('\n');
+    const targetFolderId = prompt(`Move ${selectedItems.size} items to folder:\n\nEnter folder ID (or leave empty for root):\n\n${folderNames}`);
+
+    if (targetFolderId === null) return; // User cancelled
+    const targetId = targetFolderId.trim() || null;
+
+    let moved = 0;
+    let failed = 0;
+
+    for (const itemId of selectedItems) {
+      try {
+        const isFolder = folders.some(f => f.id === itemId);
+        const type = isFolder ? 'folder' : 'memory';
+
+        if (type === 'folder') {
+          if (isSupabaseAvailable()) {
+            await hardMemorySupabase.updateFolder(itemId, { parentId: targetId });
+          } else {
+            await memoryStorage.updateFolder(itemId, { parentId: targetId });
+          }
+        } else {
+          if (isSupabaseAvailable()) {
+            await hardMemorySupabase.updateMemory(itemId, { folderId: targetId });
+          } else {
+            await memoryStorage.updateMemory(itemId, { folderId: targetId });
+          }
+        }
+        moved++;
+      } catch (error) {
+        console.error(`Error moving item ${itemId}:`, error);
+        failed++;
+      }
+    }
+
+    alert(`✅ Moved ${moved} items${failed > 0 ? `, ${failed} failed` : ''}`);
+    setSelectedItems(new Set());
+    await loadData();
+  }, [selectedItems, folders, user?.id]);
+
   const handleSplitMemory = useCallback(async (memory: Memory) => {
     if (!user?.id) return;
 
@@ -625,12 +749,6 @@ export default function MemoryPanel() {
 
       console.log('ZIP loaded, analyzing structure...');
 
-      // Parse ZIP structure and create memories
-      // folderPathToId maps folder paths to their folder IDs
-      const folderPathToId: { [path: string]: string } = {};
-      let imported = 0;
-      let failed = 0;
-
       const entries = Object.keys(zipContent.files);
       console.log('Total entries in ZIP:', entries.length);
       console.log('Entries:', entries);
@@ -662,6 +780,26 @@ export default function MemoryPanel() {
 
       console.log('Folders to create:', sortedFolders);
 
+      // Calculate total items
+      const fileEntries = entries.filter(path => !zipContent.files[path].dir && !path.split('/').pop()?.startsWith('.'));
+      const totalItems = sortedFolders.length + fileEntries.length;
+
+      // Show progress modal
+      setImportProgress({
+        isImporting: true,
+        current: 0,
+        total: totalItems,
+        currentItem: 'Starting import...',
+        status: 'importing'
+      });
+
+      // Parse ZIP structure and create memories
+      // folderPathToId maps folder paths to their folder IDs
+      const folderPathToId: { [path: string]: string } = {};
+      const newFolderIds: string[] = []; // Track new folder IDs to auto-expand
+      let imported = 0;
+      let failed = 0;
+
       // First pass: Create Folder objects for all directories
       for (const folderPath of sortedFolders) {
         const pathParts = folderPath.split('/');
@@ -674,6 +812,13 @@ export default function MemoryPanel() {
         const parentId = parentPath ? folderPathToId[parentPath] : state.selectedFolderId;
 
         console.log(`Creating folder: ${folderName} (path: ${folderPath}, parent: ${parentId})`);
+
+        // Update progress
+        setImportProgress(prev => ({
+          ...prev,
+          current: imported + failed + 1,
+          currentItem: `Creating folder: ${folderName}`
+        }));
 
         try {
           const folderData = {
@@ -691,6 +836,7 @@ export default function MemoryPanel() {
 
           // Store folder ID for children to reference (without trailing slash)
           folderPathToId[folderPath] = savedFolder.id;
+          newFolderIds.push(savedFolder.id); // Track for auto-expand
           console.log(`✓ Created folder: ${folderName} with ID: ${savedFolder.id}`);
           imported++;
         } catch (error) {
@@ -703,7 +849,6 @@ export default function MemoryPanel() {
       console.log('Folder path to ID mapping:', folderPathToId);
 
       // Second pass: Create file memories
-      const fileEntries = entries.filter(path => !zipContent.files[path].dir);
       console.log(`Files to import: ${fileEntries.length}`);
 
       for (const filePath of fileEntries) {
@@ -714,6 +859,13 @@ export default function MemoryPanel() {
 
           // Skip system files
           if (fileName.startsWith('.') || fileName === '__MACOSX') continue;
+
+          // Update progress
+          setImportProgress(prev => ({
+            ...prev,
+            current: imported + failed + 1,
+            currentItem: `Importing: ${fileName}`
+          }));
 
           // Get content based on file type
           let content: string;
@@ -761,18 +913,57 @@ export default function MemoryPanel() {
       }
 
       console.log(`Import complete! Imported: ${imported}, Failed: ${failed}`);
-      alert(`✅ Successfully imported ${imported} items from ZIP!\n${failed > 0 ? `⚠️ ${failed} items failed to import.` : ''}`);
+
+      // Show completion status
+      setImportProgress({
+        isImporting: false,
+        current: imported,
+        total: totalItems,
+        currentItem: 'Import complete!',
+        status: failed > 0 ? 'error' : 'success',
+        message: `Successfully imported ${imported} items${failed > 0 ? `, ${failed} failed` : ''}`
+      });
+
+      // Reload data to refresh tree
       await loadData();
+
+      // Auto-expand newly imported folders
+      if (newFolderIds.length > 0) {
+        setExpandedFolders(prev => {
+          const newExpanded = new Set(prev);
+          newFolderIds.forEach(id => newExpanded.add(id));
+          return newExpanded;
+        });
+        console.log(`✓ Auto-expanded ${newFolderIds.length} imported folders`);
+      }
 
       // Reset file input
       if (zipInputRef.current) {
         zipInputRef.current.value = '';
       }
+
+      // Auto-close progress modal after 2 seconds
+      setTimeout(() => {
+        setImportProgress(prev => ({ ...prev, isImporting: false }));
+      }, 2000);
+
     } catch (error) {
       console.error('Error processing ZIP file:', error);
-      alert('❌ Error processing ZIP file. Please try again.');
+      setImportProgress({
+        isImporting: false,
+        current: 0,
+        total: 0,
+        currentItem: 'Import failed',
+        status: 'error',
+        message: 'Error processing ZIP file. Please try again.'
+      });
+
+      // Auto-close error after 3 seconds
+      setTimeout(() => {
+        setImportProgress(prev => ({ ...prev, isImporting: false }));
+      }, 3000);
     }
-  }, [user?.id, state.selectedFolderId]);
+  }, [user?.id, state.selectedFolderId, loadData]);
 
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -1047,40 +1238,130 @@ export default function MemoryPanel() {
               {/* Sidebar Header */}
               <div style={{
                 padding: '16px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
               }}>
-                <h3 style={{ 
-                  fontSize: '16px', 
-                  fontWeight: '600', 
-                  color: 'var(--gray-light)',
-                  margin: 0
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px'
                 }}>
-                  Memory Tree
-                </h3>
-                <button
-                  onClick={() => handleCreateFolder()}
-                  style={{
-                    padding: '6px 12px',
-                    background: 'var(--teal-bright)',
-                    color: '#000',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
+                  <h3 style={{
+                    fontSize: '16px',
                     fontWeight: '600',
-                    cursor: 'pointer',
+                    color: 'var(--gray-light)',
+                    margin: 0
+                  }}>
+                    Memory Tree
+                  </h3>
+                  <button
+                    onClick={() => handleCreateFolder()}
+                    style={{
+                      padding: '6px 12px',
+                      background: 'var(--teal-bright)',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Folder
+                  </button>
+                </div>
+
+                {/* Batch Operation Buttons */}
+                {selectedItems.size > 0 && (
+                  <div style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Folder
-                </button>
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                    padding: '12px',
+                    background: 'rgba(64, 224, 208, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(64, 224, 208, 0.3)'
+                  }}>
+                    <div style={{
+                      width: '100%',
+                      fontSize: '12px',
+                      color: 'var(--gray-med)',
+                      marginBottom: '8px'
+                    }}>
+                      {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+                    </div>
+                    <button
+                      onClick={handleSelectAll}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        color: 'var(--gray-light)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        flex: 1
+                      }}
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={handleClearSelection}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        color: 'var(--gray-light)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        flex: 1
+                      }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleBatchMove}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e',
+                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        flex: 1
+                      }}
+                    >
+                      Move
+                    </button>
+                    <button
+                      onClick={handleBatchDelete}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        flex: 1
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Folder Tree */}
@@ -1096,6 +1377,8 @@ export default function MemoryPanel() {
                   onMoveNode={handleMoveNode}
                   selectedNodeId={state.selectedMemoryId || state.selectedFolderId || undefined}
                   allFolders={treeNodes.filter(node => node.type === 'folder')}
+                  selectedItems={selectedItems}
+                  onToggleSelection={handleToggleSelection}
                 />
               </div>
             </div>
@@ -1436,6 +1719,171 @@ export default function MemoryPanel() {
         )}
 
       </div>
+
+      {/* Import Progress Modal */}
+      {importProgress.isImporting && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'var(--darker-bg)',
+            border: '2px solid var(--teal-bright)',
+            borderRadius: '16px',
+            padding: '32px',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '24px'
+            }}>
+              {/* Animated spinner */}
+              <div style={{
+                width: '24px',
+                height: '24px',
+                border: '3px solid rgba(64, 224, 208, 0.2)',
+                borderTop: '3px solid var(--teal-bright)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                color: 'var(--gray-light)',
+                margin: 0
+              }}>
+                Importing ZIP File
+              </h3>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{
+                color: 'var(--gray-med)',
+                fontSize: '14px',
+                marginBottom: '8px'
+              }}>
+                {importProgress.currentItem}
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: 'var(--gray-dark)',
+                marginBottom: '8px'
+              }}>
+                <span>Progress</span>
+                <span>{importProgress.current} / {importProgress.total}</span>
+              </div>
+              {/* Progress bar */}
+              <div style={{
+                width: '100%',
+                height: '8px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${(importProgress.current / importProgress.total) * 100}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, var(--teal-bright), #22c55e)',
+                  transition: 'width 0.3s ease',
+                  borderRadius: '4px'
+                }} />
+              </div>
+            </div>
+
+            <div style={{
+              fontSize: '12px',
+              color: 'var(--gray-dark)',
+              textAlign: 'center'
+            }}>
+              Please wait while we import your files...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Complete/Error Modal */}
+      {!importProgress.isImporting && importProgress.message && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'var(--darker-bg)',
+            border: `2px solid ${importProgress.status === 'success' ? '#22c55e' : '#ef4444'}`,
+            borderRadius: '16px',
+            padding: '32px',
+            minWidth: '400px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px'
+            }}>
+              {importProgress.status === 'success' ? '✅' : '⚠️'}
+            </div>
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              color: 'var(--gray-light)',
+              marginBottom: '12px'
+            }}>
+              {importProgress.currentItem}
+            </h3>
+            <p style={{
+              fontSize: '14px',
+              color: 'var(--gray-med)',
+              marginBottom: '24px'
+            }}>
+              {importProgress.message}
+            </p>
+            <button
+              onClick={() => setImportProgress(prev => ({ ...prev, message: undefined }))}
+              style={{
+                padding: '8px 24px',
+                background: importProgress.status === 'success' ? '#22c55e' : '#ef4444',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add CSS animation for spinner */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
