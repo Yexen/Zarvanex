@@ -9,6 +9,42 @@ interface ModelSelectorProps {
   onSelectModel: (modelId: string) => void;
 }
 
+// CSS keyframes for sparkle animation
+const sparkleStyles = `
+@keyframes sparkle {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(114, 212, 204, 0.4),
+                0 0 10px rgba(114, 212, 204, 0.3),
+                0 0 15px rgba(114, 212, 204, 0.2),
+                inset 0 0 5px rgba(114, 212, 204, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(114, 212, 204, 0.6),
+                0 0 20px rgba(114, 212, 204, 0.5),
+                0 0 30px rgba(114, 212, 204, 0.4),
+                inset 0 0 10px rgba(114, 212, 204, 0.2);
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(114, 212, 204, 0.5);
+  }
+  50% {
+    border-color: rgba(114, 212, 204, 0.9);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+`;
+
 export default function ModelSelector({ models, selectedModel, onSelectModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredModel, setHoveredModel] = useState<Model | null>(null);
@@ -16,6 +52,20 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Check if no model is selected (sparkle animation should show)
+  const showSparkle = !selectedModel;
+
+  // Inject sparkle animation styles
+  useEffect(() => {
+    const styleId = 'model-selector-sparkle-styles';
+    if (!document.getElementById(styleId)) {
+      const styleSheet = document.createElement('style');
+      styleSheet.id = styleId;
+      styleSheet.textContent = sparkleStyles;
+      document.head.appendChild(styleSheet);
+    }
+  }, []);
 
   // Group models by provider
   const puterModels = models.filter(m => m.provider === 'puter');
@@ -219,6 +269,13 @@ export default function ModelSelector({ models, selectedModel, onSelectModel }: 
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          ...(showSparkle ? {
+            background: 'linear-gradient(135deg, rgba(20, 50, 50, 0.95) 0%, rgba(30, 70, 70, 0.95) 50%, rgba(20, 50, 50, 0.95) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'sparkle 2s ease-in-out infinite, pulse-border 2s ease-in-out infinite, shimmer 3s ease-in-out infinite',
+            border: '2px solid rgba(114, 212, 204, 0.7)',
+            color: 'var(--teal-bright)',
+          } : {}),
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center' }}>

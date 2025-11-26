@@ -5,22 +5,26 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserPreferencesContext } from '@/contexts/UserPreferencesContext';
 
 interface AttachedFile {
-  type: 'image' | 'document';
-  data: string; // base64 for images, extracted text for PDFs
+  type: 'image' | 'document' | 'video';
+  data: string; // base64 for images/videos, extracted text for text documents
   name: string;
   mimeType: string;
   isConverted?: boolean; // true if PDF was converted to image
   extractedText?: string; // extracted text from PDF
+  fileSize?: number; // file size in bytes
 }
 
 interface ChatInputProps {
   onSend: (message: string, images?: string[]) => void;
   disabled?: boolean;
   supportsVision?: boolean;
+  conversationId?: string | null;
+  persistedMessage?: string;
+  onMessageChange?: (message: string) => void;
 }
 
-export default function ChatInput({ onSend, disabled, supportsVision }: ChatInputProps) {
-  const [message, setMessage] = useState('');
+export default function ChatInput({ onSend, disabled, supportsVision, conversationId, persistedMessage, onMessageChange }: ChatInputProps) {
+  const [message, setMessage] = useState(persistedMessage || '');
   const [files, setFiles] = useState<AttachedFile[]>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -28,9 +32,23 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuth();
   const { preferences, updatePreferences } = useUserPreferencesContext();
+
+  // Sync with persisted message when conversation changes
+  useEffect(() => {
+    if (persistedMessage !== undefined) {
+      setMessage(persistedMessage);
+    }
+  }, [conversationId, persistedMessage]);
+
+  // Notify parent of message changes for persistence
+  const handleMessageChange = (newMessage: string) => {
+    setMessage(newMessage);
+    onMessageChange?.(newMessage);
+  };
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
   const MAX_FILES = 10;
@@ -100,21 +118,21 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
       });
 
       console.log('[DEBUG] Personalization updated:', { conversationStyle, interests, background });
-      
+
       // Clear the command from input
-      setMessage('');
-      
+      handleMessageChange('');
+
       // Show confirmation message
       setTimeout(() => {
-        setMessage(`Personalization updated! Style: ${conversationStyle}, Interests: ${interests.join(', ')}, Background: ${background ? 'Updated' : 'Not set'}`);
-        setTimeout(() => setMessage(''), 3000);
+        handleMessageChange(`Personalization updated! Style: ${conversationStyle}, Interests: ${interests.join(', ')}, Background: ${background ? 'Updated' : 'Not set'}`);
+        setTimeout(() => handleMessageChange(''), 3000);
       }, 100);
 
       return true;
     } catch (error) {
       console.error('[ERROR] Error parsing personalization command:', error);
-      setMessage('[ERROR] Error updating personalization. Please try again.');
-      setTimeout(() => setMessage(''), 3000);
+      handleMessageChange('[ERROR] Error updating personalization. Please try again.');
+      setTimeout(() => handleMessageChange(''), 3000);
       return true; // Still consumed the command
     }
   };
@@ -177,26 +195,40 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
         const commandHandled = await parsePersonalizationCommand(message.trim());
         if (commandHandled) return; // Don't send the command as a regular message
       }
-      // Separate images and documents with text
-      const imageFiles = files.filter(f => f.type === 'image' && f.data);
-      const documentFiles = files.filter(f => f.extractedText);
 
-      // Combine user message with extracted document text
+      // Separate file types
+      const imageFiles = files.filter(f => f.type === 'image' && f.data);
+      const videoFiles = files.filter(f => f.type === 'video' && f.data);
+      const documentFiles = files.filter(f => f.type === 'document' && f.data);
+
+      // Build message with file attachments info
       let fullMessage = message;
 
+      // Add document info to the message (files are sent as base64)
       if (documentFiles.length > 0) {
-        const documentTexts = documentFiles.map(doc =>
-          `\n\n=== Document: ${doc.name} ===\n${doc.extractedText}`
+        const docInfo = documentFiles.map(doc =>
+          `[Attached Document: ${doc.name} (${doc.mimeType})]`
         ).join('\n');
-
-        fullMessage = `${message}\n\n${documentTexts}`;
+        fullMessage = fullMessage ? `${fullMessage}\n\n${docInfo}` : docInfo;
       }
 
-      // Extract base64 image data for sending
-      const imageData = imageFiles.length > 0 ? imageFiles.map(f => f.data) : undefined;
+      // Add video info to the message
+      if (videoFiles.length > 0) {
+        const videoInfo = videoFiles.map(vid =>
+          `[Attached Video: ${vid.name} (${vid.mimeType})]`
+        ).join('\n');
+        fullMessage = fullMessage ? `${fullMessage}\n\n${videoInfo}` : videoInfo;
+      }
 
-      onSend(fullMessage, imageData);
-      setMessage('');
+      // Collect all media data (images, videos, documents as base64)
+      const allMediaData = [
+        ...imageFiles.map(f => f.data),
+        ...videoFiles.map(f => f.data),
+        ...documentFiles.map(f => f.data),
+      ].filter(Boolean);
+
+      onSend(fullMessage, allMediaData.length > 0 ? allMediaData : undefined);
+      handleMessageChange('');
       setFiles([]);
       setFileError(null);
       if (textareaRef.current) {
@@ -212,7 +244,7 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document' | 'video') => {
     const uploadedFiles = e.target.files;
     if (!uploadedFiles) return;
 
@@ -233,37 +265,22 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
       for (const file of filesToProcess) {
         if (files.length + newFiles.length >= MAX_FILES) break;
 
-        // Check if file is a PDF - smart processing
-        if (file.type === 'application/pdf') {
-          try {
-            // Check if PDF.js is loaded
-            if (!pdfjsLib) {
-              setFileError('PDF processing library is still loading. Please wait a moment and try again.');
-              continue;
-            }
+        if (type === 'video') {
+          // Video processing - read as base64
+          const result = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+            reader.readAsDataURL(file);
+          });
 
-            // First, get page count to decide approach
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            const pageCount = pdf.numPages;
-
-            console.log(`PDF detected: ${file.name} (${pageCount} pages)`);
-
-            // Always extract text from PDFs for document analysis
-            console.log(`Extracting text from PDF (${pageCount} pages)...`);
-            const extractedText = await extractPdfText(file);
-            newFiles.push({
-              type: 'document',
-              data: '',
-              name: file.name,
-              mimeType: file.type,
-              extractedText,
-            });
-            console.log(`✓ PDF text extracted: ${extractedText.length} characters`);
-          } catch (error) {
-            console.error('PDF processing error:', error);
-            setFileError(`Failed to process PDF: ${file.name}. ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
+          newFiles.push({
+            type: 'video',
+            data: result,
+            name: file.name,
+            mimeType: file.type,
+            fileSize: file.size,
+          });
         } else if (type === 'image') {
           // Regular image processing with FileReader
           const result = await new Promise<string>((resolve, reject) => {
@@ -274,27 +291,29 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
           });
 
           newFiles.push({
-            type,
+            type: 'image',
             data: result,
             name: file.name,
             mimeType: file.type,
+            fileSize: file.size,
           });
-        } else {
-          // Other document types - read as text
+        } else if (type === 'document') {
+          // Documents - keep as files (base64), don't extract text
           const result = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target?.result as string);
             reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
-            reader.readAsText(file);
+            reader.readAsDataURL(file);
           });
 
           newFiles.push({
             type: 'document',
-            data: '',
+            data: result,
             name: file.name,
             mimeType: file.type,
-            extractedText: result,
+            fileSize: file.size,
           });
+          console.log(`Document attached as file: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
         }
       }
 
@@ -475,6 +494,31 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
                     className="h-20 rounded-lg"
                     style={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}
                   />
+                ) : file.type === 'video' ? (
+                  <div
+                    className="h-20 w-20 rounded-lg flex items-center justify-center"
+                    style={{
+                      border: '1px solid rgba(114, 212, 204, 0.3)',
+                      background: 'rgba(114, 212, 204, 0.1)',
+                    }}
+                  >
+                    <div className="text-center px-2">
+                      <svg width="24" height="24" fill="none" stroke="var(--teal-bright)" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <div
+                        className="text-xs mt-1"
+                        style={{
+                          color: 'var(--teal-bright)',
+                          fontSize: '9px',
+                          wordBreak: 'break-all',
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {file.name.slice(0, 10)}...
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div
                     className="h-20 w-20 rounded-lg flex items-center justify-center"
@@ -545,11 +589,11 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
           <textarea
             ref={textareaRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => handleMessageChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleInput}
-            placeholder={message.startsWith('./') ? 
-              "Type: ./personalization friendly, coding enthusiast, prefer detailed explanations" : 
+            placeholder={message.startsWith('./') ?
+              "Type: ./personalization friendly, coding enthusiast, prefer detailed explanations" :
               "Message Zurvânex... (try: ./personalization)"
             }
             disabled={disabled}
@@ -571,9 +615,17 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
             <input
               ref={documentInputRef}
               type="file"
-              accept=".txt,.pdf,.md,.csv,.json,.log,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf"
+              accept=".txt,.pdf,.md,.csv,.json,.log,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.html,.htm"
               multiple
               onChange={(e) => handleFileUpload(e, 'document')}
+              className="hidden"
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept=".mp4,.webm,.mov,.avi,.mkv,.m4v"
+              multiple
+              onChange={(e) => handleFileUpload(e, 'video')}
               className="hidden"
             />
 
@@ -641,6 +693,33 @@ export default function ChatInput({ onSend, disabled, supportsVision }: ChatInpu
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         Images
+                      </button>
+                      <button
+                        onClick={() => {
+                          videoInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          background: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: 'var(--gray-med)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '14px',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Videos
                       </button>
                       <button
                         onClick={() => {

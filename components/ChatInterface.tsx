@@ -52,9 +52,31 @@ function ChatInterfaceInner() {
   const [saveMoment, setSaveMoment] = useState<{ user: Message; ai: Message } | null>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [isMemoryPopupOpen, setIsMemoryPopupOpen] = useState(false);
+  const [draftMessages, setDraftMessages] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
+
+  // Get or set draft message for current conversation
+  const currentDraft = activeConversationId ? draftMessages[activeConversationId] || '' : draftMessages['__new__'] || '';
+
+  const handleDraftChange = (message: string) => {
+    const key = activeConversationId || '__new__';
+    setDraftMessages(prev => ({
+      ...prev,
+      [key]: message
+    }));
+  };
+
+  // Clear draft when message is sent successfully
+  const clearCurrentDraft = () => {
+    const key = activeConversationId || '__new__';
+    setDraftMessages(prev => {
+      const updated = { ...prev };
+      delete updated[key];
+      return updated;
+    });
+  };
 
   // Get active conversation
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
@@ -835,8 +857,9 @@ function ChatInterfaceInner() {
       return;
     }
 
-    // Require model selection
+    // If no model is selected, keep the message but show alert
     if (!selectedModel) {
+      // Don't clear the draft - just show the error
       alert('Please select a model first');
       return;
     }
@@ -905,6 +928,8 @@ function ChatInterfaceInner() {
       console.log('Active conversation found:', !!conversations.find(c => c.id === conversationId));
       await addMessage(conversationId, userMessage, isFirstMessage ? 'New Conversation' : undefined);
       console.log('User message added successfully');
+      // Clear the draft since message was successfully sent
+      clearCurrentDraft();
     } catch (error) {
       console.error('Error adding user message:', error);
       alert(`Failed to save message: ${error instanceof Error ? error.message : 'Unknown error'}.`);
@@ -1514,6 +1539,9 @@ function ChatInterfaceInner() {
           onSend={handleSendMessage}
           disabled={isLoading}
           supportsVision={currentModel?.supportsVision}
+          conversationId={activeConversationId}
+          persistedMessage={currentDraft}
+          onMessageChange={handleDraftChange}
         />
       </div>
 
