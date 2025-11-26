@@ -14,6 +14,16 @@ declare global {
           testModeOrOptions?: boolean | { model?: string; stream?: boolean },
           options?: { model?: string; stream?: boolean }
         ) => Promise<string | ReadableStream | AsyncIterable<any>>;
+        // Image generation: puter.ai.txt2img(prompt, options?)
+        txt2img: (
+          prompt: string,
+          options?: {
+            model?: string;
+            quality?: 'high' | 'medium' | 'low' | 'hd' | 'standard';
+            input_image?: string; // base64 for img2img
+            input_image_mime_type?: string;
+          } | boolean // boolean for testMode
+        ) => Promise<HTMLImageElement>;
         txt2speech: (text: string, options?: { voice?: string; engine?: string; language?: string }) => Promise<any>;
         img2txt: (imageUrl: string) => Promise<string>;
       };
@@ -28,6 +38,103 @@ declare global {
     };
   }
 }
+
+/**
+ * Image generation model configuration
+ */
+export interface ImageGenModel {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+  qualityOptions?: ('high' | 'medium' | 'low' | 'hd' | 'standard')[];
+  defaultQuality?: string;
+  supportsImg2Img?: boolean;
+}
+
+/**
+ * Available Puter image generation models
+ */
+export const PUTER_IMAGE_MODELS: ImageGenModel[] = [
+  // Google Gemini
+  {
+    id: 'gemini-2.5-flash-image-preview',
+    name: 'Nano Banana (Gemini 2.5 Flash)',
+    description: 'Fast, good character consistency, image-to-image editing',
+    provider: 'google',
+    supportsImg2Img: true,
+  },
+  {
+    id: 'google/gemini-3-pro-image',
+    name: 'Nano Banana Pro (Gemini 3 Pro)',
+    description: 'Sharp, legible text, real-world knowledge, deep reasoning, 4K output',
+    provider: 'google',
+  },
+  // OpenAI
+  {
+    id: 'gpt-image-1',
+    name: 'GPT Image 1',
+    description: 'OpenAI\'s latest image gen, quality settings available',
+    provider: 'openai',
+    qualityOptions: ['high', 'medium', 'low'],
+    defaultQuality: 'medium',
+  },
+  {
+    id: 'gpt-image-1-mini',
+    name: 'GPT Image 1 Mini',
+    description: 'Faster, more affordable OpenAI image gen',
+    provider: 'openai',
+    qualityOptions: ['high', 'medium', 'low'],
+    defaultQuality: 'low',
+  },
+  {
+    id: 'dall-e-3',
+    name: 'DALL-E 3',
+    description: 'HD option, great for artistic prompts',
+    provider: 'openai',
+    qualityOptions: ['hd', 'standard'],
+    defaultQuality: 'standard',
+  },
+  {
+    id: 'dall-e-2',
+    name: 'DALL-E 2',
+    description: 'The classic - fast and reliable',
+    provider: 'openai',
+  },
+  // Flux (Black Forest Labs)
+  {
+    id: 'flux-schnell',
+    name: 'Flux.1 Schnell',
+    description: 'Fast generation, great consistency',
+    provider: 'black-forest-labs',
+  },
+  {
+    id: 'flux-kontext',
+    name: 'Flux Kontext',
+    description: 'Scene blending and context-aware generation',
+    provider: 'black-forest-labs',
+    supportsImg2Img: true,
+  },
+  {
+    id: 'flux-1.1-pro',
+    name: 'Flux 1.1 Pro',
+    description: 'Highest quality Flux model',
+    provider: 'black-forest-labs',
+  },
+  // Stable Diffusion
+  {
+    id: 'stable-diffusion-3',
+    name: 'Stable Diffusion 3',
+    description: 'Open-source powerhouse - latest SD',
+    provider: 'stability-ai',
+  },
+  {
+    id: 'stable-diffusion-xl',
+    name: 'Stable Diffusion XL',
+    description: 'High resolution, great details',
+    provider: 'stability-ai',
+  },
+];
 
 /**
  * Upload a base64 image to Puter's file system and get a public URL
@@ -89,6 +196,155 @@ async function describeImageWithPuter(base64Data: string): Promise<string | null
     console.error('[Puter Vision] img2txt failed:', error);
     return null;
   }
+}
+
+/**
+ * Generate an image using Puter's txt2img API
+ * @param prompt - Text description of the image to generate
+ * @param modelId - Image generation model ID
+ * @param quality - Quality setting (if supported by the model)
+ * @param inputImage - Optional base64 image for img2img editing
+ * @returns Promise resolving to base64 data URL of the generated image
+ */
+export async function generatePuterImage(
+  prompt: string,
+  modelId: string = 'gpt-image-1-mini',
+  quality?: 'high' | 'medium' | 'low' | 'hd' | 'standard',
+  inputImage?: string
+): Promise<string> {
+  // Check if puter is available
+  if (typeof window === 'undefined') {
+    throw new Error('Window is not defined - running on server side?');
+  }
+
+  if (!window.puter) {
+    throw new Error('Puter.js is not loaded. Please refresh the page.');
+  }
+
+  if (!window.puter.ai?.txt2img) {
+    throw new Error('Puter image generation is not available.');
+  }
+
+  // Check if user is signed in
+  try {
+    const isSignedIn = await window.puter.auth.isSignedIn();
+    if (!isSignedIn) {
+      throw new Error('Please sign in to Puter to generate images.');
+    }
+  } catch (authError) {
+    console.error('[Puter ImageGen] Auth check error:', authError);
+    throw new Error('Could not verify Puter authentication');
+  }
+
+  console.log('[Puter ImageGen] Generating image:', {
+    prompt: prompt.substring(0, 100) + '...',
+    model: modelId,
+    quality,
+    hasInputImage: !!inputImage,
+  });
+
+  try {
+    // Build options
+    const options: {
+      model?: string;
+      quality?: 'high' | 'medium' | 'low' | 'hd' | 'standard';
+      input_image?: string;
+      input_image_mime_type?: string;
+    } = {
+      model: modelId,
+    };
+
+    if (quality) {
+      options.quality = quality;
+    }
+
+    if (inputImage) {
+      // Extract mime type from data URL
+      const mimeMatch = inputImage.match(/^data:([^;]+);base64,/);
+      if (mimeMatch) {
+        options.input_image = inputImage;
+        options.input_image_mime_type = mimeMatch[1];
+      }
+    }
+
+    console.log('[Puter ImageGen] Calling txt2img with options:', {
+      ...options,
+      input_image: options.input_image ? '[base64 data]' : undefined,
+    });
+
+    // Call Puter's txt2img
+    const imageElement = await window.puter.ai.txt2img(prompt, options);
+
+    // Extract the data URL from the image element
+    // The returned HTMLImageElement has the image as its src (data URL)
+    const dataUrl = imageElement.src;
+
+    if (!dataUrl || !dataUrl.startsWith('data:')) {
+      throw new Error('Invalid image data received from Puter');
+    }
+
+    console.log('[Puter ImageGen] Image generated successfully');
+    return dataUrl;
+
+  } catch (error) {
+    console.error('[Puter ImageGen] Error:', error);
+
+    // Try fallback models if the selected model fails
+    const fallbackModels = ['gpt-image-1-mini', 'dall-e-2', 'flux-schnell'];
+    const currentIndex = fallbackModels.indexOf(modelId);
+
+    if (currentIndex === -1 || currentIndex < fallbackModels.length - 1) {
+      const nextModel = fallbackModels[currentIndex + 1] || fallbackModels[0];
+      if (nextModel !== modelId) {
+        console.log(`[Puter ImageGen] Trying fallback model: ${nextModel}`);
+        return generatePuterImage(prompt, nextModel, undefined, inputImage);
+      }
+    }
+
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+/**
+ * Check if a prompt is requesting image generation
+ * Returns the extracted prompt if it's an image generation request
+ */
+export function detectImageGenerationRequest(message: string): { isImageGen: boolean; prompt: string } {
+  const lowerMessage = message.toLowerCase();
+
+  // Common image generation trigger phrases
+  const triggers = [
+    /^(generate|create|make|draw|paint|design|render|produce)\s+(an?\s+)?(image|picture|photo|artwork|illustration|drawing|painting)\s+(of|showing|depicting|with)\s+/i,
+    /^(generate|create|make|draw|paint|design|render)\s+/i,
+    /^image:\s*/i,
+    /^\/imagine\s+/i,
+    /^\/gen\s+/i,
+    /^\/image\s+/i,
+  ];
+
+  for (const trigger of triggers) {
+    const match = message.match(trigger);
+    if (match) {
+      const prompt = message.slice(match[0].length).trim();
+      if (prompt.length > 0) {
+        return { isImageGen: true, prompt };
+      }
+    }
+  }
+
+  // Also detect explicit requests like "can you generate an image of..."
+  if (
+    (lowerMessage.includes('generate') || lowerMessage.includes('create') || lowerMessage.includes('make')) &&
+    (lowerMessage.includes('image') || lowerMessage.includes('picture') || lowerMessage.includes('photo'))
+  ) {
+    // Extract the description part after "of" or "showing"
+    const descMatch = message.match(/(?:image|picture|photo|artwork)\s+(?:of|showing|depicting|with)\s+(.+)/i);
+    if (descMatch) {
+      return { isImageGen: true, prompt: descMatch[1].trim() };
+    }
+  }
+
+  return { isImageGen: false, prompt: message };
 }
 
 /**

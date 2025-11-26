@@ -15,7 +15,7 @@ import { OPENROUTER_MODELS } from '@/lib/openrouter';
 import { OPENAI_MODELS } from '@/lib/openai';
 import { CLAUDE_MODELS } from '@/lib/claude';
 import { COHERE_MODELS } from '@/lib/cohere';
-import { PUTER_MODELS, sendPuterMessage } from '@/lib/puter';
+import { PUTER_MODELS, PUTER_IMAGE_MODELS, sendPuterMessage, generatePuterImage, detectImageGenerationRequest } from '@/lib/puter';
 import type { Conversation, Message, Model } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { compressImages, needsCompression, formatSize } from '@/utils/imageCompression';
@@ -56,6 +56,10 @@ function ChatInterfaceInner() {
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [isMemoryPopupOpen, setIsMemoryPopupOpen] = useState(false);
   const [draftMessages, setDraftMessages] = useState<Record<string, string>>({});
+  // Image generation state
+  const [selectedImageModel, setSelectedImageModel] = useState<string>('gpt-image-1-mini');
+  const [imageGenQuality, setImageGenQuality] = useState<'high' | 'medium' | 'low' | 'hd' | 'standard'>('medium');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
@@ -948,7 +952,106 @@ function ChatInterfaceInner() {
     return await sendPuterMessage(messages, modelId, onChunk, systemPrompt);
   };
 
+  // Handle image generation requests
+  const handleImageGeneration = async (originalContent: string, prompt: string, inputImages?: string[]) => {
+    let conversationId = activeConversationId;
+
+    // Create a new conversation if needed
+    if (!conversationId) {
+      try {
+        conversationId = await createConversation(selectedModel || 'image-generation');
+        if (!conversationId) {
+          console.error('Failed to create conversation for image generation');
+          return;
+        }
+        setActiveConversationId(conversationId);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        return;
+      }
+    }
+
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: originalContent,
+      timestamp: new Date(),
+      images: inputImages,
+    };
+
+    try {
+      await addMessage(conversationId, userMessage);
+      clearCurrentDraft();
+    } catch (error) {
+      console.error('Error adding user message:', error);
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setConversationLoading(conversationId, true);
+
+    try {
+      console.log('[ImageGen] Generating image with prompt:', prompt);
+      console.log('[ImageGen] Model:', selectedImageModel);
+      console.log('[ImageGen] Quality:', imageGenQuality);
+
+      // Use first input image if provided (for img2img)
+      const inputImage = inputImages && inputImages.length > 0 ? inputImages[0] : undefined;
+
+      // Generate the image
+      const generatedImageUrl = await generatePuterImage(
+        prompt,
+        selectedImageModel,
+        imageGenQuality,
+        inputImage
+      );
+
+      // Create AI response with the generated image
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Here's your generated image:\n\n*Prompt: "${prompt}"*\n*Model: ${selectedImageModel}*`,
+        timestamp: new Date(),
+        modelId: selectedImageModel,
+        modelName: PUTER_IMAGE_MODELS.find(m => m.id === selectedImageModel)?.name || selectedImageModel,
+        images: [generatedImageUrl],
+      };
+
+      await addMessage(conversationId, aiMessage);
+
+      console.log('[ImageGen] Image generated successfully');
+
+    } catch (error) {
+      console.error('[ImageGen] Error:', error);
+
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Sorry, I couldn't generate the image. ${error instanceof Error ? error.message : 'Unknown error occurred.'}\n\nTry:\n- Using a different image model\n- Simplifying your prompt\n- Making sure you're signed in to Puter`,
+        timestamp: new Date(),
+        modelId: selectedImageModel,
+        modelName: 'Image Generation',
+      };
+
+      await addMessage(conversationId, errorMessage);
+    } finally {
+      setIsGeneratingImage(false);
+      setConversationLoading(conversationId, false);
+    }
+  };
+
   const handleSendMessage = async (content: string, images?: string[]) => {
+    // Check if this is an image generation request
+    const imageGenRequest = detectImageGenerationRequest(content);
+
+    if (imageGenRequest.isImageGen) {
+      // Handle image generation
+      await handleImageGeneration(content, imageGenRequest.prompt, images);
+      return;
+    }
+
     // If no model is selected, keep the message but show alert
     if (!selectedModel) {
       // Don't clear the draft - just show the error

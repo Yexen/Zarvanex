@@ -23,7 +23,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(npm run deploy:*)",
       "Bash(git pull:*)",
-      "WebFetch(domain:docs.puter.com)"
+      "WebFetch(domain:docs.puter.com)",
+      "WebFetch(domain:developer.puter.com)"
     ],
     "deny": [],
     "ask": []
