@@ -59,7 +59,7 @@ function ChatInterfaceInner() {
   const [isMemoryPopupOpen, setIsMemoryPopupOpen] = useState(false);
   const [draftMessages, setDraftMessages] = useState<Record<string, string>>({});
   // Image generation state
-  const [selectedImageModel, setSelectedImageModel] = useState<string>('gpt-image-1-mini');
+  const [selectedImageModel, setSelectedImageModel] = useState<string>('google/gemini-3-pro-image');
   const [imageGenQuality, setImageGenQuality] = useState<'high' | 'medium' | 'low' | 'hd' | 'standard'>('medium');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   // Guidelines modal state
