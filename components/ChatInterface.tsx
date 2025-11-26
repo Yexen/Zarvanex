@@ -260,7 +260,10 @@ function ChatInterfaceInner() {
       const allModels = [...puterModels, ...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels, ...cohereModels, ...ollamaModels];
       setModels(allModels);
 
-      // Don't auto-select any model - user should choose
+      // Set Claude Sonnet 4.5 from Puter as default (free and high quality)
+      if (!selectedModel) {
+        setSelectedModel('claude-sonnet-4-5');
+      }
     } catch (error) {
       console.error('Error loading models:', error);
       // Set cloud models as fallback (always available)
@@ -307,7 +310,11 @@ function ChatInterfaceInner() {
         isFree: model.isFree,
       }));
       setModels([...openrouterModels, ...groqModels, ...openaiModels, ...claudeModels]);
-      // Don't auto-select any model - user should choose
+
+      // Set a default model from fallback list
+      if (!selectedModel && openrouterModels.length > 0) {
+        setSelectedModel(openrouterModels[0].id);
+      }
     }
   };
 
