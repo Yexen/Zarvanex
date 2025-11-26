@@ -224,16 +224,7 @@ async function generateTitleWithPuter(prompt: string, modelId: string): Promise<
   }
 }
 
-// Declare puter on window for TypeScript
-declare global {
-  interface Window {
-    puter?: {
-      ai?: {
-        chat: (prompt: string | any[], options?: { model?: string; stream?: boolean }) => Promise<string | any>;
-      };
-    };
-  }
-}
+// Window.puter type is declared in lib/puter.ts
 
 function cleanGeneratedTitle(title: string): string {
   if (!title) return '';
