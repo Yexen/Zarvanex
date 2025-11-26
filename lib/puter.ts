@@ -67,8 +67,9 @@ export const PUTER_IMAGE_MODELS: ImageGenModel[] = [
   {
     id: 'google/gemini-3-pro-image',
     name: 'Nano Banana Pro (Gemini 3 Pro)',
-    description: 'Sharp, legible text, real-world knowledge, deep reasoning, 4K output',
+    description: 'Sharp legible text, real-world knowledge, deep reasoning, 4K output',
     provider: 'google',
+    supportsImg2Img: true,
   },
   // OpenAI
   {
