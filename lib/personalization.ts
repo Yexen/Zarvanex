@@ -154,8 +154,17 @@ export function generateSystemPrompt(preferences: UserPreferences | null): strin
   if (preferences.communication_prefs) {
     const comm = preferences.communication_prefs;
 
-    if (comm.preferred_greeting && comm.preferred_greeting !== 'Hello') {
-      parts.push(`- Greet the user with: "${comm.preferred_greeting}"`);
+    // Greeting style influences overall tone
+    if (comm.greeting_style && comm.greeting_style !== 'friendly') {
+      const greetingStyleGuide: Record<string, string> = {
+        professional: '- Use a polished, professional tone in greetings and responses',
+        witty: '- Feel free to use clever wordplay and humor in your responses',
+        zen: '- Maintain a calm, mindful, and peaceful tone',
+        enthusiastic: '- Be energetic and upbeat in your communication style',
+      };
+      if (greetingStyleGuide[comm.greeting_style]) {
+        parts.push(greetingStyleGuide[comm.greeting_style]);
+      }
     }
 
     switch (comm.explanation_style) {
