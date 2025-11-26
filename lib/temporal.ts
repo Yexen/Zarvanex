@@ -157,27 +157,37 @@ export function generateTemporalPrompt(): string {
 }
 
 /**
- * Format memory timestamp for display
+ * Format memory timestamp for display - includes HH:MM for temporal awareness
  */
 export function formatMemoryTimestamp(createdAt: Date | string, updatedAt?: Date | string): string {
   const created = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
   const createdRelative = getRelativeTimeString(created);
+  const createdTime = created.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
 
   if (updatedAt) {
     const updated = typeof updatedAt === 'string' ? new Date(updatedAt) : updatedAt;
     const updatedRelative = getRelativeTimeString(updated);
+    const updatedTime = updated.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
 
     // Only show updated if different from created
     if (createdRelative !== updatedRelative) {
-      return `Created ${createdRelative}, updated ${updatedRelative}`;
+      return `Created ${createdRelative} at ${createdTime}, updated ${updatedRelative} at ${updatedTime}`;
     }
   }
 
-  return `Created ${createdRelative}`;
+  return `Created ${createdRelative} at ${createdTime}`;
 }
 
 /**
- * Format conversation timestamp
+ * Format conversation timestamp - ALWAYS includes HH:MM for temporal awareness
  */
 export function formatConversationTimestamp(timestamp: Date | string): string {
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
@@ -200,5 +210,7 @@ export function formatConversationTimestamp(timestamp: Date | string): string {
     return `yesterday at ${timeStr}`;
   }
 
-  return relative;
+  // ALWAYS include HH:MM for full temporal awareness
+  // This allows the AI to answer questions like "Who did you talk to at 10 AM on Monday?"
+  return `${relative} at ${timeStr}`;
 }
