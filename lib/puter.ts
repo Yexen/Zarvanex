@@ -95,41 +95,41 @@ export const PUTER_IMAGE_MODELS: ImageGenModel[] = [
     qualityOptions: ['hd', 'standard'],
     defaultQuality: 'standard',
   },
+  // Flux (Black Forest Labs) - use full model IDs
   {
-    id: 'dall-e-2',
-    name: 'DALL-E 2',
-    description: 'The classic - fast and reliable',
-    provider: 'openai',
-  },
-  // Flux (Black Forest Labs)
-  {
-    id: 'flux-schnell',
+    id: 'black-forest-labs/FLUX.1-schnell',
     name: 'Flux.1 Schnell',
     description: 'Fast generation, great consistency',
     provider: 'black-forest-labs',
   },
   {
-    id: 'flux-kontext',
-    name: 'Flux Kontext',
+    id: 'black-forest-labs/FLUX.1-kontext-pro',
+    name: 'Flux Kontext Pro',
     description: 'Scene blending and context-aware generation',
     provider: 'black-forest-labs',
     supportsImg2Img: true,
   },
   {
-    id: 'flux-1.1-pro',
+    id: 'black-forest-labs/FLUX.1.1-pro',
     name: 'Flux 1.1 Pro',
     description: 'Highest quality Flux model',
     provider: 'black-forest-labs',
   },
-  // Stable Diffusion
   {
-    id: 'stable-diffusion-3',
-    name: 'Stable Diffusion 3',
+    id: 'black-forest-labs/FLUX.1-dev',
+    name: 'Flux.1 Dev',
+    description: 'Development model - good balance',
+    provider: 'black-forest-labs',
+  },
+  // Stable Diffusion - use full model IDs
+  {
+    id: 'stabilityai/stable-diffusion-3-medium',
+    name: 'Stable Diffusion 3 Medium',
     description: 'Open-source powerhouse - latest SD',
     provider: 'stability-ai',
   },
   {
-    id: 'stable-diffusion-xl',
+    id: 'stabilityai/stable-diffusion-xl-base-1.0',
     name: 'Stable Diffusion XL',
     description: 'High resolution, great details',
     provider: 'stability-ai',
@@ -303,11 +303,20 @@ export async function generatePuterImage(
     console.log('[Puter ImageGen] Image generated successfully');
     return dataUrl;
 
-  } catch (error) {
-    console.error('[Puter ImageGen] Error:', error);
+  } catch (error: any) {
+    // Extract and log detailed error message
+    const errorMessage = error?.error || error?.message || String(error);
+    console.error('[Puter ImageGen] Error:', errorMessage);
+    console.error('[Puter ImageGen] Full error object:', JSON.stringify(error, null, 2));
 
     // Try fallback models if the selected model fails
-    const fallbackModels = ['gpt-image-1-mini', 'dall-e-2', 'flux-schnell'];
+    // Use correct Puter model IDs
+    const fallbackModels = [
+      'gpt-image-1-mini',
+      'gemini-2.5-flash-image-preview',
+      'black-forest-labs/FLUX.1-schnell',
+      'stabilityai/stable-diffusion-xl-base-1.0',
+    ];
     const currentIndex = fallbackModels.indexOf(modelId);
 
     if (currentIndex === -1 || currentIndex < fallbackModels.length - 1) {
@@ -318,7 +327,9 @@ export async function generatePuterImage(
       }
     }
 
-    throw error instanceof Error ? error : new Error(String(error));
+    // Create a descriptive error message
+    const errorMsg = error?.error || error?.message || String(error);
+    throw new Error(`Image generation failed: ${errorMsg}`);
   }
 }
 
