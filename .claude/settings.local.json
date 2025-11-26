@@ -21,7 +21,9 @@
       "Bash(git config:*)",
       "Bash(git rebase:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(npm run deploy:*)"
+      "Bash(npm run deploy:*)",
+      "Bash(git pull:*)",
+      "WebFetch(domain:docs.puter.com)"
     ],
     "deny": [],
     "ask": []

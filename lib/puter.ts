@@ -5,7 +5,15 @@ declare global {
   interface Window {
     puter: {
       ai: {
-        chat: (message: string | any[], options?: { model?: string; stream?: boolean }) => Promise<string | ReadableStream>;
+        // Puter chat API signatures:
+        // puter.ai.chat(prompt, imageURL?, testMode?, options?)
+        // puter.ai.chat(messages[], options?)
+        chat: (
+          messageOrPrompt: string | any[],
+          imageUrlOrOptions?: string | string[] | { model?: string; stream?: boolean },
+          testModeOrOptions?: boolean | { model?: string; stream?: boolean },
+          options?: { model?: string; stream?: boolean }
+        ) => Promise<string | ReadableStream | AsyncIterable<any>>;
         txt2speech: (text: string, options?: { voice?: string; engine?: string; language?: string }) => Promise<any>;
         img2txt: (imageUrl: string) => Promise<string>;
       };
@@ -14,7 +22,72 @@ declare global {
         signIn: () => Promise<void>;
         getUser: () => Promise<any>;
       };
+      fs: {
+        write: (path: string, data: Blob | string, options?: any) => Promise<any>;
+      };
     };
+  }
+}
+
+/**
+ * Upload a base64 image to Puter's file system and get a public URL
+ * This is needed because Puter's vision API only accepts HTTP URLs, not base64
+ */
+async function uploadImageToPuter(base64Data: string, index: number): Promise<string | null> {
+  try {
+    // Extract the actual base64 content and mime type
+    const match = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) {
+      console.log('[Puter Image] Not a valid base64 data URL');
+      return null;
+    }
+
+    const mimeType = match[1];
+    const base64Content = match[2];
+
+    // Convert base64 to Blob
+    const byteCharacters = atob(base64Content);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+
+    // Generate a unique filename
+    const ext = mimeType.split('/')[1] || 'png';
+    const filename = `zurvanex_image_${Date.now()}_${index}.${ext}`;
+
+    // Upload to Puter
+    console.log(`[Puter Image] Uploading ${filename} (${(blob.size / 1024).toFixed(1)}KB)...`);
+    const file = await window.puter.fs.write(filename, blob);
+
+    // Get the public URL - Puter files are accessible via their URL
+    const publicUrl = `https://puter.site/${file.path || filename}`;
+    console.log(`[Puter Image] Uploaded successfully: ${publicUrl}`);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('[Puter Image] Upload failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Convert base64 image to text description using Puter's img2txt
+ * Fallback when image upload isn't available
+ */
+async function describeImageWithPuter(base64Data: string): Promise<string | null> {
+  try {
+    // Puter's img2txt might accept data URLs or might need a real URL
+    // Try with data URL first
+    console.log('[Puter Vision] Attempting to describe image...');
+    const description = await window.puter.ai.img2txt(base64Data);
+    console.log('[Puter Vision] Image description:', description);
+    return description;
+  } catch (error) {
+    console.error('[Puter Vision] img2txt failed:', error);
+    return null;
   }
 }
 
@@ -51,71 +124,88 @@ export async function sendPuterMessage(
     throw new Error('Could not verify Puter authentication: ' + (authError as Error).message);
   }
 
+  // Collect all images from messages for vision processing
+  const allImages: string[] = [];
+  let imageDescriptions: string[] = [];
+
+  // First pass: collect all images and try to describe them
+  for (const msg of messages) {
+    if (msg.images && msg.images.length > 0) {
+      for (const imageData of msg.images) {
+        if (imageData.startsWith('data:image/')) {
+          allImages.push(imageData);
+        }
+      }
+    }
+  }
+
+  // If we have images, try to describe them using Puter's img2txt
+  // This is a workaround since Puter's chat API doesn't support base64 images directly
+  if (allImages.length > 0) {
+    console.log(`[Puter Vision] Processing ${allImages.length} images...`);
+
+    for (let i = 0; i < allImages.length; i++) {
+      try {
+        const description = await describeImageWithPuter(allImages[i]);
+        if (description) {
+          imageDescriptions.push(`[Image ${i + 1} Description: ${description}]`);
+        } else {
+          imageDescriptions.push(`[Image ${i + 1}: Unable to process - image attached but could not be analyzed]`);
+        }
+      } catch (error) {
+        console.error(`[Puter Vision] Failed to describe image ${i + 1}:`, error);
+        imageDescriptions.push(`[Image ${i + 1}: Processing failed]`);
+      }
+    }
+
+    console.log('[Puter Vision] Image descriptions:', imageDescriptions);
+  }
+
   // Convert messages to Puter format
-  // Puter expects array of {role, content} objects
-  // For vision models, content can be an array with text and image_url objects
+  // Puter expects array of {role, content} objects with string content
   const formattedMessages = messages
     .filter(msg => msg.content && msg.content.trim().length > 0) // Only include messages with content
-    .map((msg) => {
-      // If message has images, format for vision models
+    .map((msg, msgIndex) => {
+      let content = msg.content.trim();
+
+      // If this message has images, append the descriptions
       if (msg.images && msg.images.length > 0) {
-        // Puter vision format: content is array of {type, text/image_url}
-        const content: any[] = [
-          { type: 'text', text: msg.content.trim() }
-        ];
-
-        // Add images
-        for (const imageData of msg.images) {
-          // Skip non-image data (like videos or documents that couldn't be processed)
-          if (!imageData.startsWith('data:image/') && !imageData.startsWith('data:video/')) {
-            continue;
+        // Find which descriptions belong to this message
+        let startIndex = 0;
+        for (let i = 0; i < msgIndex; i++) {
+          if (messages[i].images) {
+            startIndex += messages[i].images!.length;
           }
-
-          content.push({
-            type: 'image_url',
-            image_url: {
-              url: imageData
-            }
-          });
         }
 
-        console.log(`[Puter] Message has ${msg.images.length} media attachments`);
+        const relevantDescriptions = imageDescriptions.slice(
+          startIndex,
+          startIndex + msg.images.length
+        );
 
-        return {
-          role: msg.role,
-          content
-        };
+        if (relevantDescriptions.length > 0) {
+          content = `${content}\n\n${relevantDescriptions.join('\n')}`;
+        }
+
+        console.log(`[Puter] Message has ${msg.images.length} images, added ${relevantDescriptions.length} descriptions`);
       }
 
-      // Regular text-only message
       return {
         role: msg.role, // 'user' or 'assistant'
-        content: msg.content.trim()
+        content
       };
     });
 
-  // Handle system prompt - add as first message if we have messages
+  // Handle system prompt - prepend to first user message
+  // (Puter doesn't support 'system' role, so we embed it in the user message)
   if (systemPrompt) {
     if (formattedMessages.length > 0) {
       // Find the first user message and prepend system prompt
       const firstUserIndex = formattedMessages.findIndex(msg => msg.role === 'user');
-      
-      if (firstUserIndex >= 0) {
-        const firstMsg = formattedMessages[firstUserIndex];
 
-        if (Array.isArray(firstMsg.content)) {
-          // Content is array (multimodal) - prepend system prompt to text part
-          const textPart = firstMsg.content.find((c: any) => c.type === 'text');
-          if (textPart) {
-            textPart.text = `${systemPrompt}\n\n${textPart.text}`;
-          } else {
-            // No text part found, add one
-            firstMsg.content.unshift({ type: 'text', text: systemPrompt });
-          }
-        } else {
-          // Content is string - simple prepend
-          firstMsg.content = `${systemPrompt}\n\n${firstMsg.content}`;
-        }
+      if (firstUserIndex >= 0) {
+        // Content is always string now - simple prepend
+        formattedMessages[firstUserIndex].content = `${systemPrompt}\n\n${formattedMessages[firstUserIndex].content}`;
       } else {
         // No user message found, add system prompt as new user message
         formattedMessages.unshift({
@@ -141,14 +231,11 @@ export async function sendPuterMessage(
   }
 
   console.log('Final formatted messages:', JSON.stringify(formattedMessages, null, 2));
+  console.log(`[Puter] Processed ${allImages.length} images with ${imageDescriptions.length} descriptions`);
 
-  // Validate all messages have content
+  // Validate all messages have content (content is always string now)
   for (const msg of formattedMessages) {
-    const hasContent = msg.content && (
-      typeof msg.content === 'string' ||
-      (Array.isArray(msg.content) && msg.content.length > 0)
-    );
-    if (!hasContent) {
+    if (!msg.content || typeof msg.content !== 'string' || msg.content.trim().length === 0) {
       throw new Error(`Invalid message format: message missing content. Message: ${JSON.stringify(msg)}`);
     }
   }
