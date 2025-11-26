@@ -94,27 +94,50 @@ export async function sendPuterMessage(
       };
     });
 
-  // Prepend system prompt to first user message instead of using system role
-  // Puter may not support 'system' role
-  if (systemPrompt && formattedMessages.length > 0 && formattedMessages[0].role === 'user') {
-    const firstMsg = formattedMessages[0];
+  // Handle system prompt - add as first message if we have messages
+  if (systemPrompt) {
+    if (formattedMessages.length > 0) {
+      // Find the first user message and prepend system prompt
+      const firstUserIndex = formattedMessages.findIndex(msg => msg.role === 'user');
+      
+      if (firstUserIndex >= 0) {
+        const firstMsg = formattedMessages[firstUserIndex];
 
-    if (Array.isArray(firstMsg.content)) {
-      // Content is array (multimodal) - prepend system prompt to text part
-      const textPart = firstMsg.content.find((c: any) => c.type === 'text');
-      if (textPart) {
-        textPart.text = `${systemPrompt}\n\n${textPart.text}`;
+        if (Array.isArray(firstMsg.content)) {
+          // Content is array (multimodal) - prepend system prompt to text part
+          const textPart = firstMsg.content.find((c: any) => c.type === 'text');
+          if (textPart) {
+            textPart.text = `${systemPrompt}\n\n${textPart.text}`;
+          } else {
+            // No text part found, add one
+            firstMsg.content.unshift({ type: 'text', text: systemPrompt });
+          }
+        } else {
+          // Content is string - simple prepend
+          firstMsg.content = `${systemPrompt}\n\n${firstMsg.content}`;
+        }
       } else {
-        // No text part found, add one
-        firstMsg.content.unshift({ type: 'text', text: systemPrompt });
+        // No user message found, add system prompt as new user message
+        formattedMessages.unshift({
+          role: 'user',
+          content: systemPrompt
+        });
       }
     } else {
-      // Content is string - simple prepend
-      formattedMessages[0] = {
+      // No messages at all, add system prompt as user message
+      formattedMessages.push({
         role: 'user',
-        content: `${systemPrompt}\n\n${firstMsg.content}`
-      };
+        content: systemPrompt
+      });
     }
+  }
+
+  // If we still have no messages, add a default greeting
+  if (formattedMessages.length === 0) {
+    formattedMessages.push({
+      role: 'user',
+      content: 'Hello!'
+    });
   }
 
   console.log('Final formatted messages:', JSON.stringify(formattedMessages, null, 2));
@@ -169,6 +192,14 @@ export async function sendPuterMessage(
             return obj && typeof obj[Symbol.asyncIterator] === 'function';
           };
 
+          console.log('Stream analysis:', {
+            isAsyncIterable: isAsyncIterable(stream),
+            isReadableStream: stream instanceof ReadableStream,
+            constructor: stream?.constructor?.name,
+            type: typeof stream,
+            hasAsyncIterator: !!stream?.[Symbol.asyncIterator]
+          });
+
           if (isAsyncIterable(stream)) {
             console.log('Processing AsyncGenerator...');
             let chunkCount = 0;
@@ -184,15 +215,26 @@ export async function sendPuterMessage(
                   // Handle {type: "text", text: "..."} format
                   if (chunk.type === 'text' && chunk.text) {
                     content = chunk.text;
+                    console.log('✅ Found text content:', content.substring(0, 50) + '...');
                   }
                   // Handle {content: "..."} format
                   else if (chunk.content) {
                     content = chunk.content;
+                    console.log('✅ Found content:', content.substring(0, 50) + '...');
+                  }
+                  // Handle direct text chunks
+                  else if (chunk.text) {
+                    content = chunk.text;
+                    console.log('✅ Found direct text:', content.substring(0, 50) + '...');
                   }
                   // Skip extra_content chunks (metadata like thought_signature)
                   else if (chunk.type === 'extra_content') {
                     console.log('Skipping extra_content chunk');
                     continue;
+                  }
+                  // Log unhandled chunk types
+                  else {
+                    console.log('❓ Unhandled chunk structure:', Object.keys(chunk));
                   }
                 }
                 // Handle plain string chunks
