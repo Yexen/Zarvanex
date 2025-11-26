@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Conversation, Message } from '@/types';
+import { formatConversationTimestamp, getRelativeTimeString } from '@/lib/temporal';
 
 interface MemoryContext {
   recentMessages: Message[];
@@ -144,17 +145,17 @@ export function formatMemoryForPrompt(memory: MemoryContext, userPreferences?: a
     });
   }
 
-  // Add recent messages context
+  // Add recent messages context with relative timestamps
   if (memory.recentMessages.length > 0) {
     parts.push(`\n### Recent Messages (last ${memory.recentMessages.length}):`);
-    
+
     // Group by conversation and show condensed format
     const recentByDate = memory.recentMessages.slice(0, 10); // Show last 10 for prompt
     recentByDate.forEach(msg => {
-      const timestamp = new Date(msg.timestamp).toLocaleDateString();
+      const relativeTime = formatConversationTimestamp(msg.timestamp);
       const model = msg.modelName ? ` (${msg.modelName})` : '';
       const content = msg.content.length > 100 ? msg.content.substring(0, 100) + '...' : msg.content;
-      parts.push(`- ${timestamp} ${msg.role}${model}: ${content}`);
+      parts.push(`- ${relativeTime} - ${msg.role}${model}: ${content}`);
     });
   }
 

@@ -1,4 +1,5 @@
 import type { UserPreferences } from '@/types';
+import { generateTemporalPrompt } from './temporal';
 
 export function generateSystemPrompt(preferences: UserPreferences | null): string {
   if (!preferences) {
@@ -233,6 +234,9 @@ export function generateSystemPrompt(preferences: UserPreferences | null): strin
   }
 
   parts.push("\nRemember to be helpful, accurate, and engaging while following these personalization guidelines.");
+
+  // Add temporal awareness
+  parts.push(generateTemporalPrompt());
 
   const finalPrompt = parts.join(' ');
   console.log('[DEBUG] Generated system prompt:', finalPrompt);

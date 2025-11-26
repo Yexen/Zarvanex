@@ -1,6 +1,7 @@
 import { hardMemorySupabase } from './hardMemorySupabase';
 import type { Memory } from '@/types/memory';
 import { entityExtractor, type EntityIndex } from '@/lib/entityExtractor';
+import { formatMemoryTimestamp, getRelativeTimeString } from '@/lib/temporal';
 
 interface HardMemoryContext {
   foundMemories: Memory[];
@@ -380,8 +381,9 @@ export function formatHardMemoryForPrompt(context: HardMemoryContext): string {
     const tags = memory.tags.length > 0 ? ` (${memory.tags.map(t => `#${t}`).join(' ')})` : '';
     const date = memory.createdAt.toLocaleDateString();
     
-    // Calculate full memory size with headers
-    const memoryHeader = `\n**${i + 1}. ${memory.title}**${tags}\n*Created: ${date}*\n`;
+    // Calculate full memory size with headers - use relative time
+    const relativeTime = getRelativeTimeString(memory.createdAt);
+    const memoryHeader = `\n**${i + 1}. ${memory.title}**${tags}\n*Saved ${relativeTime}*\n`;
     const fullMemorySize = memoryHeader.length + memory.content.length + 50; // +50 for separator
     
     console.log(`🔋 [LOSSLESS] Memory "${memory.title}":`, {
